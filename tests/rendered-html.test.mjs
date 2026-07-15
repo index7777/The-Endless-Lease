@@ -22,7 +22,8 @@ test("server-renders the Traditional Chinese game shell", async () => {
   assert.match(html, /<title>無期租寓/);
   assert.match(html, /class="game-shell is-menu"/);
   assert.match(html, /入住登記/);
-  assert.match(html, /Demo 目標：依序清除 B1、B2/);
+  assert.match(html, /目前租約/);
+  assert.match(html, /清除 B1、B2 異常/);
   assert.match(html, /付得起租金，活得像人/);
   assert.doesNotMatch(html, developmentPreviewMeta);
   assert.doesNotMatch(html, /Codex is working|Your site is taking shape|react-loading-skeleton/i);
@@ -36,12 +37,14 @@ test("ships the demo scene and character assets", async () => {
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readdir(new URL("../public/", import.meta.url)),
   ]);
-  for (const asset of ["scene-title-v2.png", "scene-hallway-v1.png", "scene-home-v1.png", "scene-elevator-v1.png", "scene-b1-maintenance-v1.png", "scene-b2-records-v1.png", "scene-clinic-v1.png", "sprite-player-v1.png", "sprite-player-female-v1.png", "sprite-player-walk-v1.png", "sprite-player-attack-v1.png", "sprite-player-death-v1.png", "sprite-boss-b2-v1.png", "pickup-rent-v1.png", "pickup-medicine-v1.png", "pickup-key-v1.png", "pickup-equipment-v1.png", "fate-die-v1.png", "sprite-wall-resident-v1.png", "sprite-light-warden-v1.png", "sprite-receipt-collector-v1.png", "sprite-rent-pursuer-v1.png"]) {
+  for (const asset of ["scene-title-v2.png", "scene-hallway-v1.png", "scene-home-v1.png", "scene-elevator-v1.png", "scene-elevator-b1-v2.png", "scene-b1-maintenance-v1.png", "scene-b2-records-v1.png", "scene-clinic-v2.png", "sprite-player-v1.png", "sprite-player-female-v1.png", "sprite-player-walk-v1.png", "sprite-player-walk-transition-v2.png", "sprite-player-female-walk-transition-v2.png", "sprite-player-attack-v1.png", "sprite-player-attack-windup-v2.png", "sprite-player-female-attack-windup-v2.png", "sprite-player-death-v1.png", "sprite-boss-b1-v2.png", "sprite-boss-b1-attack-v2.png", "sprite-boss-b2-v1.png", "sprite-boss-b2-attack-v2.png", "sprite-wall-resident-attack-v2.png", "sprite-rent-pursuer-attack-v2.png", "pickup-rent-v1.png", "pickup-medicine-v1.png", "pickup-key-v1.png", "pickup-equipment-v1.png", "fate-die-v1.png", "sprite-wall-resident-v1.png", "sprite-light-warden-v1.png", "sprite-receipt-collector-v1.png", "sprite-rent-pursuer-v1.png"]) {
     assert.ok(publicFiles.includes(asset), `missing ${asset}`);
     assert.match(`${game}\n${globals}`, new RegExp(asset.replace(".", "\\.")));
   }
   assert.match(layout, /無期租寓/);
   assert.match(model, /gender:\s*"male"\s*\|\s*"female"/);
   assert.match(game, /destiny\.gender === "female"/);
+  assert.match(game, /setFilingStage\("ready"\); dispatchFlow\(\{ type: "RESTART" \}\)/);
+  assert.doesNotMatch(game, /NT\$/);
   assert.doesNotMatch(game, /_sites-preview|SkeletonPreview/);
 });

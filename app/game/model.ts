@@ -13,6 +13,10 @@ export type Enemy = {
   followsIndoors?: boolean;
   kind?: "wall" | "light" | "receipt" | "pursuer" | "boss_b1" | "boss_b2";
   maxHp?: number;
+  attackTimer?: number;
+  attackCooldown?: number;
+  attackLanded?: boolean;
+  combatSeen?: boolean;
 };
 
 export type DebtEntry = {
