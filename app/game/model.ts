@@ -5,6 +5,7 @@ export type Enemy = {
   y: number;
   hp: number;
   phase: number;
+  alerted?: boolean;
   elite?: boolean;
   threat?: number;
   location: Location;
