@@ -21,7 +21,9 @@ if errorlevel 1 (
 set "NODE_EXE="
 for /f "delims=" %%N in ('where node 2^>nul') do if not defined NODE_EXE set "NODE_EXE=%%N"
 if defined NODE_EXE (
-  for /f "tokens=1 delims=." %%V in ('"!NODE_EXE!" -p "process.versions.node" 2^>nul') do set "NODE_MAJOR=%%V"
+  for %%D in ("!NODE_EXE!") do set "NODE_DIR=%%~dpD"
+  set "PATH=!NODE_DIR!;!PATH!"
+  for /f "tokens=1 delims=." %%V in ('node -p process.versions.node 2^>nul') do set "NODE_MAJOR=%%V"
 )
 if not defined NODE_MAJOR set "NODE_MAJOR=0"
 
@@ -29,7 +31,9 @@ if !NODE_MAJOR! LSS 22 (
   set "CODEX_NODE=%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe"
   if exist "!CODEX_NODE!" (
     set "NODE_EXE=!CODEX_NODE!"
-    for /f "tokens=1 delims=." %%V in ('"!NODE_EXE!" -p "process.versions.node"') do set "NODE_MAJOR=%%V"
+    for %%D in ("!NODE_EXE!") do set "NODE_DIR=%%~dpD"
+    set "PATH=!NODE_DIR!;!PATH!"
+    for /f "tokens=1 delims=." %%V in ('node -p process.versions.node 2^>nul') do set "NODE_MAJOR=%%V"
   )
 )
 
