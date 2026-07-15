@@ -137,12 +137,8 @@ goto menu
 echo.
 git status --short
 echo.
-set /p "MSG=Commit description: "
-if "%MSG%"=="" (
-  echo [STOP] A commit description is required.
-  pause
-  goto menu
-)
+set "MSG=Sync The Endless Lease"
+echo Commit description is automatic: !MSG!
 
 git add -A || goto git_failed
 git diff --cached --quiet
