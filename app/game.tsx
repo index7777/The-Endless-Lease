@@ -4,7 +4,7 @@ import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { DEFECT_DESCRIPTIONS, DEMO_OPENING, DEMO_ROOMS, HONG_YI_LINES, IDENTITY_LORE, MANAGEMENT_COPY, TALENT_DESCRIPTIONS } from "./game/demo-content";
 import { gameFlowReducer, INITIAL_GAME_FLOW } from "./game/flow-state";
 import { ATTRIBUTE_NAMES, evaluateDestiny } from "./game/destiny-rules";
-import { DiceModel } from "./game/dice-model";
+import { DiceRollScene } from "./game/dice-model";
 import { isWalkable, probeGround, resolveSpawn } from "./game/scene-navigation";
 import { advanceDemoEnding, DEMO_ENDING_ZH_TW } from "./game/demo-ending";
 import type { DemoEndingState } from "./game/demo-ending";
@@ -95,6 +95,7 @@ const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 export default function Game() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const keys = useRef<Record<string, boolean>>({});
+  const sceneTransitionLockedUntil = useRef(0);
   const touch = useRef({ x: 0, y: 0 });
   const audio = useRef<AudioContext | null>(null);
   const storageId = useRef(1);
@@ -671,6 +672,7 @@ export default function Game() {
   }, [destiny.attributes, sound]);
 
   const interact = useCallback(() => {
+    if (performance.now() < sceneTransitionLockedUntil.current) return;
     const g = game.current;
     if (location === "hallway") {
       const perceptionRadius = 48 + destiny.attributes[3] * 7;
@@ -713,6 +715,7 @@ export default function Game() {
           entryMessage = `租金保護已失效：牆膜侵蝕開始，${pursuit.count} 名第 ${pursuit.threat} 級追租者侵入房間`;
         }
         keys.current = {};
+        sceneTransitionLockedUntil.current = performance.now() + 650;
         setActiveRoom(isManagementOffice ? -99 : nearbyDoor.slot); setLocation("room");
         if (isManagementOffice) {
           if (demoEndingState !== "RETURN_TO_OFFICE") progressDemoEnding("RETURN_TO_OFFICE");
@@ -734,6 +737,7 @@ export default function Game() {
           }
         });
         keys.current = {};
+        sceneTransitionLockedUntil.current = performance.now() + 650;
         setLocation("elevator"); setActiveRoom(null);
         setMessage("已進入電梯轎廂：控制盤就在右側，靠近後按 E 選擇樓層"); sound("dice");
       }
@@ -751,12 +755,13 @@ export default function Game() {
       const hallwayGround = probeGround("hallway", returnX, WORLD_W, canvasRef.current?.clientHeight || 900, g.player.y);
       g.player.x = returnX; g.player.y = hallwayGround.y; g.player.facing = 1; g.camera = clamp(returnX - 420, 0, WORLD_W - 900);
       keys.current = {};
+      sceneTransitionLockedUntil.current = performance.now() + 650;
       dispatchFlow({ type: "CLOSE_OVERLAY" }); setLocation("hallway"); setActiveRoom(null);
       setMessage("返回公共走廊");
       return;
     }
     const activeEvent = ROOMS.find(room => room.slot === activeRoom);
-    const interactionX = location === "elevator" ? 850 : activeEvent?.id === 2 ? 430 : 790;
+    const interactionX = location === "elevator" ? 850 : activeEvent?.id === 2 ? 430 : location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot ? 720 : 790;
     if (Math.abs(g.player.x - interactionX) < (location === "elevator" ? 62 : 95)) {
       keys.current = {};
       if (location === "elevator") {
@@ -878,7 +883,7 @@ export default function Game() {
           if (item.y < band.top || item.y > band.bottom) item.y = band.top + 35 + ((item.x * .29) % Math.max(30, band.bottom - band.top - 48));
         }
         const activeEvent = ROOMS.find(room => room.slot === activeRoom);
-        const interactionX = location === "elevator" ? 850 : activeEvent?.id === 2 ? 430 : 790;
+        const interactionX = location === "elevator" ? 850 : activeEvent?.id === 2 ? 430 : location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot ? 720 : 790;
         if ((roomEvent !== null || floorSelect || storageOpen) && Math.abs(p.x - interactionX) > (location === "elevator" ? 82 : 120)) {
           keys.current = {};
           dispatchFlow({ type: "CLOSE_OVERLAY" });
@@ -1071,7 +1076,7 @@ export default function Game() {
         const own = activeRoom !== null && g.floor === destiny.floor && activeRoom === destiny.roomSlot;
         const promptX = activeEvent?.id === 2 ? 340 : 705;
         if (p.x < 175) { ctx.fillStyle = "rgba(9,12,10,.72)"; ctx.fillRect(15, h * .22, 125, 34); ctx.fillStyle = "#d0c29d"; ctx.font = "700 14px serif"; ctx.fillText("E 返回走廊", 25, h * .255); }
-        if (Math.abs(p.x - (activeEvent?.id === 2 ? 430 : 790)) < 145) { ctx.fillStyle = "rgba(9,12,10,.72)"; ctx.fillRect(promptX, h * .38, 180, 64); ctx.fillStyle = "#d0c29d"; ctx.font = "700 16px serif"; ctx.fillText(own ? "個人儲物櫃" : activeEvent?.id === 0 ? "發霉冰箱" : activeEvent?.id === 1 ? "封鎖牆面" : "住戶診療台", promptX + 15, h * .43); ctx.font = "13px serif"; ctx.fillText(own ? "靠近按 E 整理" : "靠近按 E 探索", promptX + 15, h * .47); }
+        if (Math.abs(p.x - (activeEvent?.id === 2 ? 430 : own ? 720 : 790)) < 145) { ctx.fillStyle = "rgba(9,12,10,.72)"; ctx.fillRect(promptX, h * .38, 180, 64); ctx.fillStyle = "#d0c29d"; ctx.font = "700 16px serif"; ctx.fillText(own ? "個人儲物櫃" : activeEvent?.id === 0 ? "發霉冰箱" : activeEvent?.id === 1 ? "封鎖牆面" : "住戶診療台", promptX + 15, h * .43); ctx.font = "13px serif"; ctx.fillText(own ? "靠近按 E 整理" : "靠近按 E 探索", promptX + 15, h * .47); }
       } else {
         ctx.fillStyle = "rgba(9,12,10,.75)"; ctx.fillRect(12, h * .25, 80, 30); ctx.fillRect(750, h * .63, 220, 34);
         ctx.fillStyle = "#d0c29d"; ctx.font = "700 12px serif"; ctx.fillText("E 離開", 24, h * .28); ctx.fillText(g.floor <= 0 ? "維修貨梯控制盤｜E 操作" : "控制盤｜E 操作", 765, h * .67);
@@ -1096,7 +1101,7 @@ export default function Game() {
         };
         const enemyImage = sceneImages[enemyKey as keyof typeof sceneImages];
         const enemyCrop = enemyCrops[enemyKey];
-        const spriteH = (isBoss ? 342 : e.elite ? 294 : 268) * enemyScale;
+        const spriteH = (isBoss ? 342 : e.elite ? 294 : 268) * enemyScale * SCENE_PRESENTATION[location].characterScale;
         const spriteW = spriteH * (enemyCrop.w / enemyCrop.h);
         if (enemyImage.complete) ctx.drawImage(enemyImage, enemyCrop.x, enemyCrop.y, enemyCrop.w, enemyCrop.h, -spriteW / 2, -spriteH, spriteW, spriteH);
         ctx.restore();
@@ -1141,12 +1146,11 @@ export default function Game() {
         : pose === "walk"
           ? (female ? { x: 132, y: 102, w: 668, h: 1243 } : { x: 185, y: 102, w: 587, h: 1218 })
           : (female ? { x: 214, y: 97, w: 562, h: 1263 } : { x: 201, y: 79, w: 588, h: 1278 });
-      const spriteH = (pose === "death" ? 126 : 270) * depthScale;
+      const spriteH = (pose === "death" ? 126 : 270) * depthScale * SCENE_PRESENTATION[location].characterScale;
       const spriteW = spriteH * (crop.w / crop.h);
       const walkBob = isMoving && pose !== "attack" && pose !== "windup" ? Math.abs(Math.sin(now / 105)) * 1.8 : 0;
       if (p.attack > 0 && !g.dead) ctx.rotate(-Math.sin((1 - p.attack / .44) * Math.PI) * .035);
       if (playerImage.complete) ctx.drawImage(playerImage, crop.x, crop.y, crop.w, crop.h, -spriteW * .48, -spriteH - walkBob, spriteW, spriteH);
-      if (pose === "attack" && p.attack > .11) { ctx.strokeStyle = "rgba(222,202,153,.55)"; ctx.lineWidth = 4; ctx.beginPath(); ctx.arc(5, -spriteH * .52, spriteH * .55, -.78, .32); ctx.stroke(); }
       ctx.restore();
       ctx.restore();
 
@@ -1204,7 +1208,7 @@ export default function Game() {
       {!started && destinyOpen && <section className="destiny-screen">
         <nav className="filing-progress" aria-label="租約建檔進度"><span className={filingStage === "ready" || filingStage === "rolling" ? "active" : "done"}>骰子結果</span><i>›</i><span className={filingStage === "attributes" ? "active" : filingStage === "briefing" || filingStage === "result" || filingStage === "complete" ? "done" : ""}>選擇建檔</span><i>›</i><span className={filingStage === "briefing" || filingStage === "result" || filingStage === "complete" ? "active" : ""}>身份確認</span></nav>
         <div className="contract-head"><span>無期租寓管理室</span><small>輪迴入住登記表｜表單 17-B</small><h2>租約建檔</h2><p>{filingStage === "complete" ? "建檔程序已完成。你的身份已被管理室正式存檔。" : filingStage === "result" ? "請確認本輪最終建檔內容；確認後資料不可撤回。" : filingStage === "attributes" ? "六項骰面已完成記錄；可直接提交，或重新擲出裁定。" : "公寓正在決定你的本輪身份。"}</p><div className="dossier-rule"/><blockquote>{filingStage === "complete" ? "本輪居住權即刻生效。" : "在這裡，每一份檔案，都是你在這棟世界裡的存續證明。"}</blockquote><footer>◇ ROOM 17 ◇</footer></div>
-        {(filingStage === "ready" || filingStage === "rolling") && <div className="filing-die"><header><small>骰子結果</small><h3>命運裁定</h3><p>管理室將以六顆骰子裁定本輪能力；相同骰面組合永遠對應相同身份與天賦。</p></header><div className={`six-dice-tray ${filingStage === "rolling" ? "rolling" : ""}`}>{ATTRIBUTE_NAMES.map((name,index)=><article key={name} className="roll-die"><DiceModel value={destiny.attributes[index]} rolling={filingStage === "rolling"} seed={index} label={name}/><b>{name}</b><small>{destiny.attributes[index]} 點</small></article>)}</div><p className="roll-instruction">請擲出本輪六項建檔結果。</p><button className="asset-button" disabled={filingStage === "rolling"} onClick={beginFiling}>{filingStage === "rolling" ? "裁定中…" : "擲出裁定"}<small>{filingStage === "rolling" ? "管理室正在記錄骰面" : "六顆骰子將同時裁定"}</small></button></div>}
+        {(filingStage === "ready" || filingStage === "rolling") && <div className="filing-die"><header><small>骰子結果</small><h3>命運裁定</h3><p>六顆骰子將在同一個投擲場景中落定；落定後才更新六項屬性與建檔結果。</p></header><div className={`six-dice-tray ${filingStage === "rolling" ? "rolling" : ""}`}><DiceRollScene values={destiny.attributes} rolling={filingStage === "rolling"}/></div><p className="roll-instruction">請擲出本輪六項建檔結果。</p><button className="asset-button" disabled={filingStage === "rolling"} onClick={beginFiling}>{filingStage === "rolling" ? "裁定中…" : "擲出裁定"}<small>{filingStage === "rolling" ? "六骰正在同一場景中落定" : "六顆骰子將同時裁定"}</small></button></div>}
         {filingStage === "attributes" && <div className="filing-main"><header><h3>本輪骰子結果</h3><span>可直接提交，或重新擲出裁定</span></header><div className="dice-grid filing-values">
           {ATTRIBUTE_NAMES.map((name, index) => <article key={name} className="die">
             <small>{name}</small><strong style={{animationDelay:`${index * .42}s`}}>{destiny.attributes[index]}</strong><i>管理室建檔</i>

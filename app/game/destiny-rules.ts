@@ -13,7 +13,7 @@ export type DestinyOutcome = {
   defectNumber: number;
   identitySum: number;
   talentSum: number;
-  defectProduct: number;
+  defectScore: number;
   ruleId: "dice.v2.independent";
 };
 
@@ -25,10 +25,11 @@ export function evaluateDestiny(values: readonly number[]): DestinyOutcome {
   }
   const identitySum = values[0] + values[2] + values[4];
   const talentSum = values[1] + values[3] + values[5];
-  const defectProduct = values.reduce((product, value) => product * value, 1);
+  // 配對加權總和仍使用全部六骰；完整枚舉後 N、T、D 的 216 種聯合結果各出現 216 次。
+  const defectScore = values[0] + values[1] + values[2] + values[3] + 2 * values[4] + 2 * values[5];
   const identityNumber = wrapD6(identitySum);
   const talentNumber = wrapD6(talentSum);
-  const defectNumber = wrapD6(defectProduct);
+  const defectNumber = wrapD6(defectScore);
   return {
     identity: IDENTITIES[identityNumber - 1],
     talent: TALENTS[talentNumber - 1],
@@ -38,7 +39,7 @@ export function evaluateDestiny(values: readonly number[]): DestinyOutcome {
     defectNumber,
     identitySum,
     talentSum,
-    defectProduct,
+    defectScore,
     ruleId: "dice.v2.independent",
   };
 }

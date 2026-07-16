@@ -10,10 +10,10 @@ export const TIME_PERIOD_PROFILES: Record<TimePeriod, { exposure: number; cold: 
 };
 
 export const SCENE_PRESENTATION = {
-  hallway: { profile: "hallway_fluorescent", lights: [.22, .51, .82], wetReflection: .34, characterExposure: .96 },
-  room: { profile: "resident_tungsten_fluorescent", lights: [.55], wetReflection: .12, characterExposure: .9 },
-  elevator: { profile: "elevator_cold_metal", lights: [.5], wetReflection: .27, characterExposure: .92 },
-} satisfies Record<Location, { profile: string; lights: number[]; wetReflection: number; characterExposure: number }>;
+  hallway: { profile: "hallway_fluorescent", lights: [.22, .51, .82], wetReflection: .34, characterExposure: .96, characterScale: 1 },
+  room: { profile: "resident_tungsten_fluorescent", lights: [.55], wetReflection: .12, characterExposure: .9, characterScale: 1.56 },
+  elevator: { profile: "elevator_cold_metal", lights: [.5], wetReflection: .27, characterExposure: .92, characterScale: 1.22 },
+} satisfies Record<Location, { profile: string; lights: number[]; wetReflection: number; characterExposure: number; characterScale: number }>;
 
 export const UI_THEME = {
   textPrimary: "#d6c9a8", textSecondary: "#918873", warning: "#b68c52", danger: "#8b3932",
@@ -37,4 +37,3 @@ export function sampleCharacterExposure(location: Location, normalizedX: number,
   const localLight = Math.max(0, 1 - nearest * 4.2) * .2 * period.practicalIntensity;
   return Math.max(.52, scene.characterExposure * period.exposure + localLight);
 }
-

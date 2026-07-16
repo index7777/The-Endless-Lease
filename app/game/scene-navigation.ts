@@ -51,11 +51,11 @@ export function resolveSpawn(location: Location, spawnId: SpawnId, worldWidth: n
 }
 
 export const ROOM_COLLIDERS: readonly CollisionRect[] = [
-  { id: "left_wall_and_doorframe", x1: 0, x2: .145, y1: .5, y2: 1 },
-  { id: "bed", x1: .22, x2: .51, y1: .66, y2: .84 },
-  { id: "desk_and_chair", x1: .51, x2: .69, y1: .61, y2: .84 },
-  { id: "television_cabinet", x1: .66, x2: .78, y1: .59, y2: .84 },
-  { id: "wardrobe", x1: .75, x2: .91, y1: .33, y2: .86 },
+  // 家具位於後景；碰撞不得封住前景地板，也不得堵住房門出口。
+  { id: "bed", x1: .22, x2: .51, y1: .66, y2: .79 },
+  { id: "desk_and_chair", x1: .51, x2: .69, y1: .61, y2: .78 },
+  { id: "television_cabinet", x1: .66, x2: .78, y1: .59, y2: .78 },
+  { id: "wardrobe", x1: .75, x2: .91, y1: .33, y2: .79 },
 ];
 
 export function isWalkable(location: Location, x: number, y: number, worldWidth: number, viewportHeight: number, radius = 24) {
@@ -76,6 +76,13 @@ export function validateSceneNavigation() {
       if (!resolved.ground.grounded) throw new Error(`${scene}.${spawn.id} 下方沒有地面`);
       if (!isWalkable(scene as Location, resolved.ground.x, resolved.ground.y, width, 900)) throw new Error(`${scene}.${spawn.id} 與碰撞區重疊`);
     }
+  }
+  const roomSpawn = resolveSpawn("room", "from_hallway", 1000, 900).ground;
+  for (let x = roomSpawn.x; x >= 80; x -= 10) {
+    if (!isWalkable("room", x, probeGround("room", x, 1000, 900).y, 1000, 900)) throw new Error(`房門出口路徑在 x=${x} 被阻擋`);
+  }
+  for (let x = roomSpawn.x; x <= 720; x += 10) {
+    if (!isWalkable("room", x, probeGround("room", x, 1000, 900).y, 1000, 900)) throw new Error(`置物櫃路徑在 x=${x} 被阻擋`);
   }
   return true;
 }

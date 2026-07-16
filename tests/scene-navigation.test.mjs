@@ -9,7 +9,8 @@ test("uses named spawn points and ground probes instead of room image coordinate
   assert.match(source, /from_room/);
   assert.match(source, /probeGround/);
   assert.match(source, /resolveSpawn/);
-  assert.match(source, /left_wall_and_doorframe/);
+  assert.doesNotMatch(source, /left_wall_and_doorframe/);
+  assert.match(source, /房門出口路徑/);
+  assert.match(source, /置物櫃路徑/);
   assert.match(source, /validateSceneNavigation/);
 });
-
