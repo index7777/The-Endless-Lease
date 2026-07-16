@@ -7,6 +7,7 @@
 - 全樓層附件：1 份
 - 狀態：已建檔，尚未開始修正
 - 驗收規則：T14–T47 必須由製作人實機驗收；Codex 自測完成後最多只能標記 `NEEDS_REVIEW`。
+- 後續補充：`tasks/feedback/2026-07-16-vercel-playtest-batch-01-supplement-01.md`（製作人補充 33–43／T49–T59）。
 
 ## 任務清單與驗收條件
 
