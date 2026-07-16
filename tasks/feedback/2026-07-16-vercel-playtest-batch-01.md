@@ -24,13 +24,13 @@
 | T22 | 另一處「租約建檔」風格不對。 | 與 T19 分開追蹤；確認實際流程位置後逐頁比對 approved 圖，未確認前不得自行合併。 | `03-archive-selection-style.png`、`05-archive-content-style.png` | TODO |
 | T23 | 玩家與床比例錯誤、會穿過門，未鎖碰撞。 | 門／床相對比例符合全樓層規格，腳底貼地，可行走區與門牆碰撞阻止穿模。 | `07-player-room-scale-collision.png` | TODO |
 | T24 | 人物移動幀不足、不順，素材光影不一致。 | 完成規範動作階段、補幀、Foot Lock、亮度／色溫標準化，通過 Animation Validator 與實機驗收。 | `09-hallway-player-scale.png`、`11-hallway-player-scale-duplicate-evidence.png` | TODO |
-| T25 | 已給置物格風格，目前未接上。 | 正式置物格使用 approved MetalFrame／PaperPanel／ManagementButton 組裝，功能與五格寄存規則可操作。 | `08-storage-style.png` | TODO |
-| T26 | 玩家攻擊幀不足、動作不自然、音效不對。 | 攻擊含預備、蓄力、出手、命中、過衝、恢復；傷害只在命中幀一次，音效符合武器與空間。 | 製作人文字回饋 | TODO |
-| T27 | 敵方移動、攻擊幀不足且不自然。 | 各敵人完整移動／攻擊狀態與節奏，幀率、Foot Lock、命中時機均通過驗收。 | 製作人文字回饋 | TODO |
-| T28 | 暫停與住戶記錄美術需依範例一致。 | 兩頁只由 approved 共用元件組裝，無重複風格、現代 HUD 或新材質。 | 製作人文字回饋 | TODO |
-| T29 | 拾取音效不對，要像收進背包。 | 正式拾取音效具有近距離布包／收納質感，音量與空間正確，製作人聽感通過。 | 製作人文字回饋 | TODO |
+| T25 | 已給置物格風格，目前未接上；2026-07-17 製作人判定送驗版本美術風格不符。 | 退回重製；唯一視覺真值為 approved `ui-storage-cabinet-v1.png`。黑色金屬櫃、五格一致槽位、薄框、泛黃紙標、管理室按鈕與真實背景逐項一致，且功能與五格寄存規則可操作後才可重新送驗。 | `08-storage-style.png`、製作人 2026-07-17 文字退回 | TODO／REJECTED CURRENT VERSION |
+| T26 | 玩家攻擊幀不足、動作不自然、音效不對；2026-07-17 補充現況明顯少幀且光影不一致。 | 攻擊含 Prepare、Windup、Swing、Impact、Follow-through、Recovery；補足幀數並通過對齊與亮度差檢查，傷害只在 Impact 幀一次，音效符合武器與空間。 | 製作人文字回饋 | TODO／REJECTED CURRENT ASSETS |
+| T27 | 敵方移動、攻擊幀不足且不自然；2026-07-17 補充素材與角度圖不足，現況像漂浮移動。 | 重新生成足夠的移動、停頓、轉向角度、攻擊、受擊與 Collapse 死亡來源圖；完成對齊、補幀、Foot Lock 與狀態機後，各敵人完整節奏、幀率、命中時機均通過驗收。 | 製作人文字回饋 | TODO／REJECTED CURRENT ASSETS |
+| T28 | 暫停與住戶記錄已彼此一致，但 2026-07-17 製作人判定沒有按美術規範製作。 | 兩頁只由 approved 共用元件組裝，使用黑色金屬、泛黃紙張、深色木頭與正式五色，無現代 HUD、新材質或新動畫語言；一致但偏規範仍視為不合格。 | 製作人文字回饋 | TODO／REJECTED CURRENT VERSION |
+| T29 | 拾取音效不對，要像收進背包；2026-07-17 實測仍是電子嗶聲。 | 移除所有電子 Beep／UI 成功音；正式拾取音效具有近距離布包、袋口與物件落袋質感，依物品材質變化，音量與空間正確。 | 製作人文字回饋 | TODO／REJECTED CURRENT AUDIO |
 | T30 | 六大天賦與缺陷能力未更新。 | 六大天賦與所有缺陷的名稱、說明、數值與實際遊戲效果一致且可驗證。 | 製作人文字回饋 | TODO |
-| T31 | 診療台顯示錯誤事件且可穿過。 | 顯示住戶診療台正確事件／文字；玩家與敵人不能穿過台體。 | 製作人文字回饋 | TODO |
+| T31 | 診療台顯示錯誤事件且可穿過；2026-07-17 實測問題一模一樣、視同未修改。 | 只顯示住戶診療台正確事件／文字；玩家與敵人四方向均不能穿過台體；互動提示與碰撞輪廓一致。 | 製作人文字回饋 | TODO／UNCHANGED ISSUE |
 | T32 | 站在電梯門正前方不能互動，要偏右。 | 電梯門正前方的合理距離與寬度內都能觸發同一電梯互動。 | `14-b1-elevator-control-area.png` | TODO |
 | T33 | 電梯可移動／碰撞範圍不對，角色與操控台比例失真。 | 轎廂可行走區、牆／門／操控台碰撞正確，人物與設備符合現實比例。 | `12-elevator-led-floor-selector.png` | TODO |
 | T34 | 電梯樓層 LED 風格與位置不對。 | LED 固定在正確世界／面板位置，材質、字形、亮度與老式電梯一致。 | `12-elevator-led-floor-selector.png` | TODO |

@@ -14,6 +14,7 @@ export type GameFlowState = {
 export type GameFlowAction =
   | { type: "OPEN_INTRO" }
   | { type: "OPEN_DESTINY" }
+  | { type: "RETURN_REGISTRATION" }
   | { type: "START_RUN" }
   | { type: "RESTORE_RUN" }
   | { type: "TOGGLE_PAUSE" }
@@ -36,6 +37,8 @@ export function gameFlowReducer(state: GameFlowState, action: GameFlowAction): G
       return state.screen === "title" ? { screen: "intro", paused: false, overlay: { kind: "none" } } : state;
     case "OPEN_DESTINY":
       return state.screen === "intro" ? { screen: "destiny", paused: false, overlay: { kind: "none" } } : state;
+    case "RETURN_REGISTRATION":
+      return state.screen === "destiny" ? { screen: "intro", paused: false, overlay: { kind: "none" } } : state;
     case "START_RUN":
       return state.screen === "destiny" ? { screen: "run", paused: false, overlay: { kind: "none" } } : state;
     case "RESTORE_RUN":

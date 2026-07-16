@@ -31,6 +31,13 @@ test("rejects out-of-order screen transitions", () => {
   assert.equal(gameFlowReducer(INITIAL_GAME_FLOW, { type: "OPEN_DESTINY" }), INITIAL_GAME_FLOW);
 });
 
+test("returns from destiny to the residency registration form", () => {
+  const intro = gameFlowReducer(INITIAL_GAME_FLOW, { type: "OPEN_INTRO" });
+  const destiny = gameFlowReducer(intro, { type: "OPEN_DESTINY" });
+  assert.equal(gameFlowReducer(destiny, { type: "RETURN_REGISTRATION" }).screen, "intro");
+  assert.equal(gameFlowReducer(intro, { type: "RETURN_REGISTRATION" }), intro);
+});
+
 test("restores a saved run only from the title", () => {
   const restored = gameFlowReducer(INITIAL_GAME_FLOW, { type: "RESTORE_RUN" });
   assert.deepEqual(restored, { screen: "run", paused: false, overlay: { kind: "none" } });

@@ -134,3 +134,437 @@ button { font:inherit; color:inherit; }
 .floor10-notice-screen article{width:min(690px,92vw);padding:42px 54px;background:#b8aa8b url('/ui-dossier-card-v1.png') center/100% 100% no-repeat;color:#211e18;box-shadow:8px 12px 0 #020302}.floor10-notice-screen small{color:#77332e;letter-spacing:.18em}.floor10-notice-screen h2{font-size:clamp(36px,5vw,58px);margin:16px 0}.floor10-notice-screen p{font-size:17px;line-height:2}.floor10-notice-screen blockquote{margin:24px 0;border-left:3px solid #79332d;padding:12px 18px}.floor10-notice-screen button{float:right;min-width:220px;padding:13px 24px}
 .demo-ending-cinematic{background:radial-gradient(circle at center,#171813aa,#020303 72%)}.demo-ending-cinematic article{width:min(860px,92vw);text-align:center;color:#cdbb91}.demo-ending-cinematic small{letter-spacing:.3em;color:#7e6d50}.demo-ending-cinematic h2{font-size:clamp(42px,6vw,76px);font-weight:500;margin:28px 0 18px}.demo-ending-cinematic p{font-size:clamp(17px,1.7vw,24px);line-height:1.9}.demo-ending-cinematic strong{display:block;margin:36px 0;color:#b48654;font-size:clamp(24px,3vw,40px);letter-spacing:.1em}.demo-ending-cinematic footer{display:flex;justify-content:center;gap:18px}.demo-ending-cinematic button{min-width:230px;padding:14px 24px}
 @media(max-width:700px){.hongyi-office-dialogue article,.floor10-notice-screen article{padding:24px}.hongyi-office-dialogue p{min-height:120px}.demo-ending-cinematic footer{flex-direction:column}}
+
+/* T14 / T17 / T18 / T19 / T21 — producer-approved administrative layouts */
+.start-screen {
+  display: block;
+  background: linear-gradient(90deg,rgba(2,4,4,.94) 0%,rgba(2,4,4,.72) 31%,rgba(2,4,4,.14) 64%),url('/scene-title-v2.png') center/cover;
+}
+.start-copy {
+  position: absolute;
+  left: clamp(44px,7.3vw,140px);
+  top: 27%;
+  width: min(650px,43vw);
+  margin: 0;
+  text-shadow: 0 4px 16px #000;
+}
+.start-copy .title-cycle {
+  margin: 0 0 12px;
+  color: #c5a96f;
+  font-size: clamp(13px,1.05vw,20px);
+  letter-spacing: .42em;
+}
+.start-copy h1 {
+  width: auto;
+  margin: 0;
+  color: #ddd1ad;
+  font-size: clamp(72px,8.8vw,148px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: .08em;
+  filter: none;
+}
+.start-copy .title-slogan {
+  display: grid;
+  gap: 6px;
+  margin: 28px 0 28px;
+  padding: 4px 0 4px 24px;
+  border-left: 3px solid #7d2424;
+  color: #e0d6bd;
+  font-size: clamp(17px,1.55vw,28px);
+  line-height: 1.7;
+}
+.title-actions { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.title-actions .title-primary-action {
+  min-width: 368px;
+  padding: 17px 36px;
+  border: 1px solid #e2d8ba;
+  background: #c7bb99;
+  box-shadow: 5px 5px 0 #5b2a26;
+  color: #211f1a;
+  font-size: clamp(15px,1.05vw,20px);
+  font-weight: 800;
+  letter-spacing: .12em;
+  cursor: pointer;
+}
+.title-actions .title-primary-action:hover { background: #d1c5a3; }
+.title-actions .title-primary-action:active { transform: translate(2px,2px); box-shadow: 3px 3px 0 #5b2a26; }
+.title-actions .title-resume {
+  padding: 7px 0;
+  border: 0;
+  border-bottom: 1px solid #79694c;
+  background: transparent;
+  box-shadow: none;
+  color: #9f8f70;
+  font-size: 12px;
+  letter-spacing: .12em;
+  cursor: pointer;
+}
+.start-copy .title-demo-note {
+  margin-top: 22px;
+  color: #8e8166;
+  font-size: clamp(11px,.85vw,15px);
+  letter-spacing: .05em;
+}
+
+.intro-screen { padding: 0; background: url('/scene-registration-form-v1.png') center/cover; overflow: hidden; }
+.intro-contract {
+  position: absolute;
+  left: 30.1%;
+  top: 9.5%;
+  width: 46.2%;
+  height: 89%;
+  max-height: none;
+  margin: 0;
+  padding: clamp(18px,2.1vw,38px) clamp(30px,4vw,72px) clamp(16px,2vw,34px);
+  overflow: hidden;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  color: #211e18;
+  transform: rotate(-.15deg);
+}
+.registration-header { position: relative; display: grid; place-items: center; min-height: 52px; padding-bottom: 9px; border-bottom: 1px solid #756a57; }
+.registration-header b { font-size: clamp(14px,1.1vw,21px); font-weight: 600; letter-spacing: .22em; }
+.registration-header small { color: #453f34; font: 8px Georgia,serif; letter-spacing: .07em; }
+.registration-header span { position: absolute; right: 0; top: 1px; font-size: clamp(8px,.55vw,11px); line-height: 1.35; letter-spacing: .08em; }
+.intro-contract > h1 { margin: 14px 0 20px; padding-bottom: 12px; border-bottom: 1px solid #6d6251; color: #6f2f2b; text-align: center; font-size: clamp(20px,2vw,36px); font-weight: 500; letter-spacing: .34em; }
+.intro-contract > h2 { margin: 0 0 13px; font-size: clamp(28px,3.15vw,55px); font-weight: 500; letter-spacing: .09em; white-space: nowrap; }
+.registration-copy { display: grid; gap: 4px; }
+.registration-copy p { margin: 0; font-size: clamp(10px,.84vw,15px); line-height: 1.65; }
+.intro-contract > blockquote { margin: 16px 0 13px; padding: 10px 16px; border: 1px solid #716653; background: transparent; text-align: center; font-size: clamp(11px,.95vw,17px); line-height: 1.45; }
+.intro-contract .intro-name { display: grid; grid-template-columns: 145px 1fr; align-items: center; gap: 12px; margin: 0 0 10px; padding: 7px 14px; border: 1px solid #7a6e59; background: transparent; }
+.intro-contract .intro-name span { font-size: clamp(11px,.9vw,16px); font-weight: 600; }
+.intro-contract .intro-name input { width: 100%; padding: 8px 12px; border: 1px solid #796b55; border-bottom: 2px solid #7d2424; background: rgba(213,201,168,.6); color: #211e18; font-size: clamp(12px,.95vw,17px); }
+.intro-contract .intro-gender { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 0 7% 11px; padding: 11px 14%; border: 1px solid #796d58; }
+.intro-contract .intro-gender legend { padding: 0 18px; text-align: center; font-size: clamp(11px,.88vw,16px); letter-spacing: .12em; }
+.intro-contract .intro-gender button { float: none; padding: 8px 14px; border: 1px solid #5e5546; background: transparent; color: #211e18; font-size: clamp(13px,1.1vw,20px); cursor: pointer; }
+.intro-contract .intro-gender button.selected { border: 2px solid #7d2424; color: #7d2424; box-shadow: inset 0 0 0 1px #7d242455; }
+.intro-contract .registration-submit { float: none; display: block; width: 68%; margin: 0 auto 7px; padding: 10px 18px; border: 3px double #7d2424; background: rgba(208,193,155,.34); color: #6f2b27; font-size: clamp(16px,1.35vw,24px); font-weight: 700; letter-spacing: .14em; cursor: pointer; }
+.intro-contract .registration-submit:disabled { opacity: .38; cursor: not-allowed; }
+.registration-rules { display: block; text-align: center; color: #453f35; font-size: clamp(10px,.78vw,14px); letter-spacing: .16em; }
+.intro-contract .intro-rules { margin-top: 5px; padding: 0; color: #665d4e!important; text-align: center; font-size: clamp(8px,.58vw,11px); letter-spacing: .05em; }
+
+.destiny-screen.stage-ready,.destiny-screen.stage-rolling,.destiny-screen.stage-attributes,.destiny-screen.stage-result {
+  grid-template-columns: minmax(330px,32vw) minmax(0,1fr);
+  grid-template-rows: 64px minmax(0,1fr) 84px;
+  padding: 24px 40px 26px;
+  gap: 16px 28px;
+  background: linear-gradient(90deg,rgba(3,4,4,.97),rgba(3,4,4,.68) 39%,rgba(3,4,4,.82)),url('/scene-hallway-v1.png') center/cover;
+}
+.destiny-screen.stage-ready .contract-head,.destiny-screen.stage-rolling .contract-head,.destiny-screen.stage-attributes .contract-head,.destiny-screen.stage-result .contract-head {
+  margin-top: 64px;
+  padding: 38px 42px 28px;
+  border: 1px solid #5b4a34;
+  background: linear-gradient(145deg,rgba(23,23,20,.98),rgba(7,8,7,.98));
+  box-shadow: inset 0 0 50px #000,0 0 0 4px #080908;
+}
+.destiny-screen.stage-ready .contract-head small,.destiny-screen.stage-rolling .contract-head small,.destiny-screen.stage-attributes .contract-head small,.destiny-screen.stage-result .contract-head small { margin-bottom: 54px; }
+.destiny-screen.stage-ready .contract-head h2,.destiny-screen.stage-rolling .contract-head h2,.destiny-screen.stage-attributes .contract-head h2,.destiny-screen.stage-result .contract-head h2 { font-size: clamp(48px,5vw,78px); }
+.destiny-screen.stage-ready .contract-head p,.destiny-screen.stage-rolling .contract-head p,.destiny-screen.stage-attributes .contract-head p,.destiny-screen.stage-result .contract-head p { max-width: 390px; }
+.destiny-screen.stage-ready .filing-progress,.destiny-screen.stage-rolling .filing-progress,.destiny-screen.stage-attributes .filing-progress,.destiny-screen.stage-result .filing-progress { grid-column: 2; grid-row: 1; }
+.destiny-screen.stage-ready .filing-die,.destiny-screen.stage-rolling .filing-die {
+  grid-column: 2;
+  grid-row: 2/4;
+  display: grid;
+  grid-template-columns: minmax(200px,27%) minmax(0,1fr);
+  grid-template-rows: minmax(0,1fr) auto auto;
+  gap: 13px 24px;
+  padding: 22px 28px 18px;
+  border: 1px solid #4d3f2d;
+  background: rgba(3,5,4,.72);
+  overflow: hidden;
+  place-items: stretch;
+  align-content: stretch;
+}
+.destiny-screen .filing-die > header { grid-column: 1; grid-row: 1/4; align-self: stretch; justify-content: center; padding: 24px; border-left: 1px solid #9b7950; }
+.destiny-screen .filing-die > header h3 { margin: 14px 0 24px; font-size: clamp(42px,4.4vw,70px); font-weight: 500; line-height: 1.6; letter-spacing: .1em; }
+.destiny-screen .filing-die > header p { color: #a99a7d; font-size: 14px; line-height: 2; }
+.physical-die-tray { grid-column: 2; width: 100%; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid #72593a; box-shadow: 0 12px 25px #0009; }
+.dice-roll-scene { position: relative; width: 100%; height: 100%; min-height: 410px; overflow: hidden; background: linear-gradient(rgba(18,15,11,.18),rgba(8,8,6,.46)),url('/scene-registration-form-v1.png') center/cover; }
+.dice-roll-scene .fate-ledger { position: absolute; left: 18%; right: 13%; bottom: -2%; height: 58%; border: 1px solid #75634a; background: linear-gradient(145deg,rgba(188,171,134,.87),rgba(117,101,76,.9)); box-shadow: 7px 9px 0 #080806; transform: rotate(-3deg); }
+.dice-roll-scene .fate-ledger:after { content: "入住登記記錄簿　表單 17-B"; position: absolute; left: 12%; top: 14%; color: #453b2d; font-size: 12px; letter-spacing: .18em; }
+.dice-roll-scene .fate-die { position: absolute; z-index: 2; left: 43%; top: 18%; width: min(40%,330px); height: auto; transform-origin: 54% 78%; filter: drop-shadow(14px 19px 10px #000b); }
+.dice-roll-scene.is-rolling .fate-die { animation: physical-die-roll .54s cubic-bezier(.38,.02,.25,1) infinite alternate; }
+.dice-roll-scene .fate-stamp { position: absolute; z-index: 3; right: 12%; bottom: 8%; display: grid; place-items: center; width: 74px; height: 74px; border: 3px double #7d2424; color: #7d2424; font-size: 18px; transform: rotate(-10deg); opacity: .72; }
+.roll-instruction { grid-column: 2; margin: 0; text-align: center; color: #d0ae73; font-size: 17px; letter-spacing: .12em; }
+.filing-die .fate-roll-action { grid-column: 2; justify-self: center; min-width: 360px; padding: 15px 36px; border: 1px solid #d4c29e; background: #c4b694; box-shadow: 4px 5px 0 #4e241f; color: #211e18; font-size: 25px; font-weight: 700; letter-spacing: .16em; cursor: pointer; }
+.filing-die .return-registration { grid-column: 2; justify-self: center; padding: 4px 18px; border: 0; background: transparent; color: #a68a61; font-size: 14px; letter-spacing: .12em; cursor: pointer; }
+@keyframes physical-die-roll { 0% { transform: translate(-8%,-2%) rotate(-8deg) scale(.96); } 52% { transform: translate(4%,-13%) rotate(17deg) scale(1.02); } 100% { transform: translate(12%,1%) rotate(-3deg) scale(.98); } }
+
+.destiny-screen.stage-attributes .filing-main,.destiny-screen.stage-result .filing-main { padding: 22px 30px 18px; }
+.destiny-screen.stage-attributes .filing-main .dice-grid { grid-template-columns: repeat(3,minmax(0,1fr)); grid-template-rows: repeat(2,minmax(0,1fr)); height: calc(100% - 54px); gap: 16px; }
+.destiny-screen.stage-attributes .filing-main .die { min-height: 0; height: 100%; padding: 16px; border: 0; background: url('/ui-dossier-card-v1.png') center/100% 100% no-repeat; box-shadow: 5px 7px 0 #020302; }
+.destiny-screen.stage-attributes .filing-main .die small { display: block; width: 64%; margin: 0 auto; padding: 5px 10px; border: 1px solid #776b57; font-size: clamp(14px,1.05vw,20px); }
+.destiny-screen.stage-attributes .filing-main .die strong { margin: 12px 0 3px; font-size: clamp(48px,5vw,82px); font-weight: 500; }
+.destiny-screen.stage-attributes .filing-main .die strong { opacity: 1; animation: none; filter: none; clip-path: none; }
+.destiny-screen.stage-attributes .filing-main .die.selected { outline: 2px solid #d2ad6a; outline-offset: 2px; filter: brightness(1.08); box-shadow: 0 0 15px #b6843d88,5px 7px 0 #020302; }
+.destiny-screen.stage-result .filing-main .fate-details { grid-template-columns: repeat(2,minmax(0,1fr)); grid-template-rows: repeat(2,minmax(0,1fr)); height: calc(100% - 54px); gap: 16px; }
+.destiny-screen.stage-result .filing-main .fate-details article { min-height: 0; height: 100%; padding: 20px 30px; border: 0; background: url('/ui-dossier-card-v1.png') center/100% 100% no-repeat; box-shadow: 5px 7px 0 #020302; }
+.destiny-screen.stage-result .filing-main .fate-details article { opacity: 1; transform: none; animation: none; }
+.destiny-screen.stage-result .filing-main .fate-details article.defect { background: linear-gradient(#7d242426,#7d242426),url('/ui-dossier-card-v1.png') center/100% 100% no-repeat; }
+.destiny-screen.stage-result .filing-main .fate-details article small { width: 62%; margin: 0 auto; padding: 5px 8px; font-size: clamp(12px,.9vw,17px); }
+.destiny-screen.stage-result .filing-main .fate-details article b { margin: 12px 0 6px; font-size: clamp(24px,2.1vw,37px); }
+.destiny-screen.stage-result .filing-main .fate-details .detail { margin: 0; font-size: clamp(11px,.76vw,14px); line-height: 1.65; }
+.destiny-screen.stage-attributes > .contract-actions,.destiny-screen.stage-result > .contract-actions { position: relative; grid-column: 2; grid-row: 3; gap: 16px; justify-content: flex-start; padding-right: 300px; }
+.destiny-screen.stage-attributes > .contract-actions button,.destiny-screen.stage-result > .contract-actions button { min-width: 240px; height: 62px; padding: 10px 24px; border: 1px solid #76664d; background: #1b1b18; color: #c8ab78; box-shadow: 3px 4px 0 #050605; }
+.destiny-screen.stage-attributes > .contract-actions .accept,.destiny-screen.stage-result > .contract-actions .accept { min-width: 330px; border-color: #d0b47d; background: #c3a66e; color: #211e18; }
+.filing-warning { position: absolute; right: 0; top: 50%; width: 280px; margin: 0; color: #81735c; font-size: 12px; text-align: right; transform: translateY(-50%); }
+
+@media(max-width:1100px) {
+  .start-copy { top: 25%; width: min(580px,54vw); }
+  .start-copy h1 { font-size: clamp(64px,9vw,100px); }
+  .intro-contract { left: 29.4%; top: 8%; width: 47.8%; height: 91%; padding: 18px 34px; }
+  .intro-contract > h1 { margin: 8px 0 10px; }
+  .intro-contract > h2 { margin-bottom: 7px; }
+  .intro-contract > blockquote { margin: 9px 0 8px; padding: 7px 10px; }
+  .intro-contract .intro-name { margin-bottom: 7px; padding: 5px 10px; }
+  .intro-contract .intro-gender { margin-bottom: 7px; padding-top: 7px; padding-bottom: 7px; }
+  .intro-contract .registration-submit { padding: 7px 12px; }
+  .destiny-screen.stage-ready,.destiny-screen.stage-rolling,.destiny-screen.stage-attributes,.destiny-screen.stage-result { grid-template-columns: minmax(240px,29vw) minmax(0,1fr); padding: 16px 22px; gap: 12px 18px; }
+  .destiny-screen.stage-ready .contract-head,.destiny-screen.stage-rolling .contract-head,.destiny-screen.stage-attributes .contract-head,.destiny-screen.stage-result .contract-head { padding: 24px 22px; }
+  .destiny-screen.stage-ready .filing-die,.destiny-screen.stage-rolling .filing-die { grid-template-columns: minmax(145px,24%) minmax(0,1fr); padding: 14px; gap: 10px; }
+  .dice-roll-scene { min-height: 310px; }
+  .filing-die .fate-roll-action { min-width: 270px; font-size: 19px; }
+  .destiny-screen.stage-attributes .filing-main .die strong { margin-top: 7px; }
+  .destiny-screen.stage-attributes > .contract-actions,.destiny-screen.stage-result > .contract-actions { padding-right: 0; }
+  .filing-warning { display: none; }
+  .destiny-screen.stage-attributes > .contract-actions button,.destiny-screen.stage-result > .contract-actions button { min-width: 180px; }
+  .destiny-screen.stage-attributes > .contract-actions .accept,.destiny-screen.stage-result > .contract-actions .accept { min-width: 240px; }
+}
+
+@media(max-width:800px) and (orientation:landscape) {
+  .start-copy { left: 5vw; top: 18%; width: 58vw; }
+  .start-copy .title-cycle { font-size: 10px; }
+  .start-copy h1 { font-size: 64px; }
+  .start-copy .title-slogan { margin: 14px 0; font-size: 14px; line-height: 1.45; }
+  .title-actions .title-primary-action { min-width: 300px; padding: 11px 20px; font-size: 13px; }
+  .start-copy .title-demo-note { margin-top: 12px; font-size: 9px; }
+  .intro-contract { left: 28.5%; top: 5%; width: 49.5%; height: 95%; padding: 9px 22px; background: transparent; }
+  .registration-header { min-height: 34px; }
+  .intro-contract > h1 { margin: 5px 0 6px; padding-bottom: 5px; font-size: 16px; }
+  .intro-contract > h2 { margin-bottom: 4px; font-size: 24px; }
+  .registration-copy p { font-size: 8px; line-height: 1.35; }
+  .intro-contract > blockquote { margin: 5px 0; padding: 4px 8px; font-size: 8px; }
+  .intro-contract .intro-name { grid-template-columns: 92px 1fr; margin-bottom: 4px; padding: 3px 7px; }
+  .intro-contract .intro-name span,.intro-contract .intro-name input { font-size: 9px; }
+  .intro-contract .intro-name input { padding: 4px 7px; }
+  .intro-contract .intro-gender { margin-bottom: 4px; padding: 3px 12%; }
+  .intro-contract .intro-gender legend { font-size: 8px; }
+  .intro-contract .intro-gender button { padding: 3px 8px; font-size: 9px; }
+  .intro-contract .registration-submit { margin-bottom: 2px; padding: 4px 10px; font-size: 11px; }
+  .registration-rules,.intro-contract .intro-rules { font-size: 7px; }
+}
+
+.destiny-screen.stage-complete {
+  grid-template-columns: minmax(330px,32vw) minmax(0,1fr);
+  grid-template-rows: 64px minmax(0,1fr);
+  padding: 24px 40px 26px;
+  gap: 16px 28px;
+  background: linear-gradient(90deg,rgba(3,4,4,.97),rgba(3,4,4,.68) 39%,rgba(3,4,4,.82)),url('/scene-hallway-v1.png') center/cover;
+}
+.destiny-screen.stage-complete .filing-progress { grid-column: 2; grid-row: 1; }
+.destiny-screen.stage-complete .contract-head {
+  grid-column: 1;
+  grid-row: 1/3;
+  margin-top: 64px;
+  padding: 38px 42px 28px;
+  border: 1px solid #5b4a34;
+  background: linear-gradient(145deg,rgba(23,23,20,.98),rgba(7,8,7,.98));
+  box-shadow: inset 0 0 50px #000,0 0 0 4px #080908;
+}
+.destiny-screen.stage-complete .contract-head small { margin-bottom: 54px; }
+.destiny-screen.stage-complete .filing-complete {
+  grid-column: 2;
+  grid-row: 2;
+  display: grid!important;
+  grid-template-columns: 1fr!important;
+  grid-template-rows: auto minmax(300px,1fr) auto auto!important;
+  gap: 16px!important;
+  min-height: 0;
+  padding: 0;
+  overflow: auto;
+  background: transparent!important;
+  place-items: stretch;
+  align-content: stretch!important;
+}
+.destiny-screen.stage-complete .filing-complete header { padding: 0 10px 12px; border-bottom: 1px solid #55452f; }
+.destiny-screen.stage-complete .filing-complete header span { color: #d0a765; font-size: 30px; letter-spacing: .12em; }
+.destiny-screen.stage-complete .filing-complete article {
+  position: relative;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 13px;
+  min-height: 300px;
+  padding: 25px;
+  border: 1px solid #cbbd9d;
+  background: url('/ui-dossier-card-v1.png') center/100% 100% no-repeat;
+  box-shadow: 6px 8px 0 #020302;
+  color: #211e18;
+}
+.destiny-screen.stage-complete .filing-complete article > small { font-size: clamp(22px,2.2vw,38px); line-height: 1.45; text-align: center; }
+.destiny-screen.stage-complete .filing-complete article strong { display: grid; font-size: clamp(34px,3.2vw,54px); line-height: 1.35; text-align: center; }
+.destiny-screen.stage-complete .filing-complete article strong em { color: #7d2424; }
+.destiny-screen.stage-complete .filing-complete :is(span,article strong span,article strong em) { opacity: 1!important; transform: none!important; animation: none!important; }
+.destiny-screen.stage-complete .filing-complete article > b { font-size: 11px; letter-spacing: .22em; }
+.lease-seal { display: grid; place-items: center; width: 54px; height: 54px; border: 3px double #7d2424; color: #7d2424; font-size: 23px; font-style: normal; transform: rotate(-8deg); }
+.destiny-screen.stage-complete .filing-summary { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); border: 1px solid #705a3c; background: rgba(15,15,12,.92); }
+.destiny-screen.stage-complete .filing-summary span { min-width: 0; padding: 10px 14px; border-right: 1px solid #55462f; color: #8f7c5c; }
+.destiny-screen.stage-complete .filing-summary span:last-child { border-right: 0; }
+.destiny-screen.stage-complete .filing-summary b { display: block; overflow: hidden; color: #cfb37e; font-size: clamp(16px,1.35vw,23px); text-overflow: ellipsis; white-space: nowrap; }
+.filing-complete-actions { display: flex; align-items: center; gap: 16px; position: relative; }
+.filing-complete-actions button { display: grid; min-width: 280px; padding: 12px 24px; border: 1px solid #75644b; background: #181916; color: #c6a979; text-align: left; box-shadow: 3px 4px 0 #030403; cursor: pointer; }
+.filing-complete-actions button small { font-size: 10px; color: #88775b; }
+.filing-complete-actions .enter-lease { min-width: 320px; border-color: #dbc38f; background: #c4a76d; color: #211e18; font-size: 21px; font-weight: 800; }
+.filing-complete-actions .enter-lease small { color: #54452f; }
+.filing-complete-actions p { margin-left: auto; color: #85765b; font-size: 12px; }
+
+@media(max-width:1100px) {
+  .destiny-screen.stage-complete { grid-template-columns: minmax(240px,29vw) minmax(0,1fr); padding: 16px 22px; gap: 12px 18px; }
+  .destiny-screen.stage-complete .contract-head { padding: 24px 22px; }
+  .destiny-screen.stage-complete .filing-complete { grid-template-rows: auto minmax(240px,1fr) auto auto!important; }
+  .destiny-screen.stage-complete .filing-complete article { min-height: 240px; padding: 16px; }
+  .filing-complete-actions button,.filing-complete-actions .enter-lease { min-width: 220px; }
+  .filing-complete-actions p { display: none; }
+}
+
+@media(prefers-reduced-motion:reduce) {
+  .filing-values .die strong,
+  .filing-result article,
+  .filing-complete span,
+  .filing-complete article strong span,
+  .filing-complete article strong em {
+    opacity: 1!important;
+    transform: none!important;
+    filter: none!important;
+    clip-path: none!important;
+  }
+}
+
+/* T14/T17/T18/T19/T21/T22：手機橫向仍須完整呈現行政文件與操作區。 */
+@media(max-width:950px) and (orientation:landscape) and (max-height:520px) {
+  .start-copy { left: 7.5vw; top: 15%; width: 52vw; }
+  .start-copy .title-cycle { font-size: 9px; }
+  .start-copy h1 { font-size: clamp(46px,7.7vw,62px); }
+  .start-copy .title-slogan { margin: 12px 0 10px; padding-left: 14px; font-size: 12px; line-height: 1.45; }
+  .title-actions { gap: 5px; }
+  .title-actions .title-primary-action { min-width: 270px; padding: 9px 15px; font-size: 11px; }
+  .title-actions .title-resume-action { font-size: 8px; }
+  .start-copy .title-demo-note { margin-top: 7px; font-size: 7px; }
+
+  .intro-contract { left: 29.1%; top: 3%; width: 48%; height: 97%; padding: 5px 20px 4px; }
+  .registration-header { min-height: 27px; padding-bottom: 3px; }
+  .registration-header b { font-size: 10px; }
+  .registration-header small,.registration-header span { font-size: 5px; }
+  .intro-contract > h1 { margin: 3px 0 4px; padding-bottom: 3px; font-size: 13px; }
+  .intro-contract > h2 { margin-bottom: 2px; font-size: 20px; }
+  .registration-copy { gap: 1px; }
+  .registration-copy p { font-size: 6.5px; line-height: 1.22; }
+  .intro-contract > blockquote { margin: 3px 0; padding: 3px 6px; font-size: 6.5px; line-height: 1.2; }
+  .intro-contract .intro-name { grid-template-columns: 78px 1fr; gap: 4px; margin-bottom: 2px; padding: 2px 5px; }
+  .intro-contract .intro-name span,.intro-contract .intro-name input { font-size: 7px; }
+  .intro-contract .intro-name input { padding: 2px 5px; }
+  .intro-contract .intro-gender { gap: 6px; margin: 0 8% 2px; padding: 1px 14%; }
+  .intro-contract .intro-gender legend { padding: 0 8px; font-size: 6px; }
+  .intro-contract .intro-gender button { padding: 2px 5px; font-size: 7px; }
+  .intro-contract .registration-submit { width: 66%; margin-bottom: 1px; padding: 2px 7px; border-width: 2px; font-size: 8px; }
+  .registration-rules,.intro-contract .intro-rules { margin-top: 0; font-size: 5px; line-height: 1.1; }
+
+  .destiny-screen.stage-ready,
+  .destiny-screen.stage-rolling,
+  .destiny-screen.stage-attributes,
+  .destiny-screen.stage-result,
+  .destiny-screen.stage-complete {
+    grid-template-columns: minmax(185px,25vw) minmax(0,1fr);
+    grid-template-rows: 30px minmax(0,1fr) 45px;
+    padding: 6px 12px;
+    gap: 5px 9px;
+    overflow: hidden;
+  }
+  .filing-progress { height: 30px; gap: 14px; font-size: 9px; }
+  .filing-progress span { height: 28px; }
+  .filing-progress span.active:after { bottom: -7px; padding: 0 5px; }
+  .filing-progress i { font-size: 14px; }
+  .destiny-screen.stage-ready .contract-head,
+  .destiny-screen.stage-rolling .contract-head,
+  .destiny-screen.stage-attributes .contract-head,
+  .destiny-screen.stage-result .contract-head,
+  .destiny-screen.stage-complete .contract-head {
+    grid-row: 1/4;
+    margin-top: 30px;
+    padding: 12px 13px 8px;
+    overflow: hidden;
+  }
+  .destiny-screen :is(.contract-head) span { font-size: 8px; }
+  .destiny-screen :is(.contract-head) small,
+  .destiny-screen.stage-complete .contract-head small { margin: 4px 0 16px; font-size: 7px; }
+  .destiny-screen :is(.contract-head) h2,
+  .destiny-screen.stage-ready .contract-head h2,
+  .destiny-screen.stage-rolling .contract-head h2,
+  .destiny-screen.stage-attributes .contract-head h2,
+  .destiny-screen.stage-result .contract-head h2 { font-size: 29px; line-height: 1.02; }
+  .destiny-screen :is(.contract-head) p { margin: 7px 0; font-size: 7.5px; line-height: 1.45; }
+  .destiny-screen .dossier-rule { margin-top: 10px; padding-top: 8px; font-size: 7px; line-height: 1.35; }
+  .destiny-screen .contract-head footer { bottom: 8px; font-size: 7px; }
+
+  .destiny-screen.stage-ready .filing-die,.destiny-screen.stage-rolling .filing-die {
+    grid-template-columns: 112px minmax(0,1fr);
+    grid-template-rows: minmax(0,1fr) 32px 18px;
+    padding: 7px 10px 5px;
+    gap: 4px 8px;
+  }
+  .destiny-screen .filing-die > header { padding: 8px; }
+  .destiny-screen .filing-die > header small { font-size: 7px; }
+  .destiny-screen .filing-die > header h3 { margin: 4px 0 7px; font-size: 28px; line-height: 1.2; }
+  .destiny-screen .filing-die > header p { margin: 0; font-size: 7px; line-height: 1.5; }
+  .dice-roll-scene { min-height: 0; height: 100%; }
+  .dice-roll-scene .fate-stamp { width: 35px; height: 35px; font-size: 9px; }
+  .roll-instruction { font-size: 9px; }
+  .filing-die .fate-roll-action { min-width: 210px; padding: 5px 12px; font-size: 12px; }
+  .filing-die .return-registration { padding: 0 10px; font-size: 7px; }
+
+  .destiny-screen.stage-attributes .filing-main,.destiny-screen.stage-result .filing-main { padding: 8px 12px 7px; overflow: hidden; }
+  .filing-main > header { gap: 8px; padding-bottom: 5px; }
+  .filing-main > header h3 { font-size: 11px; }
+  .filing-main > header span { font-size: 7px; }
+  .destiny-screen.stage-attributes .filing-main .dice-grid,
+  .destiny-screen.stage-result .filing-main .fate-details { height: calc(100% - 25px); margin-top: 5px; gap: 5px 8px; }
+  .destiny-screen.stage-attributes .filing-main .die { padding: 4px; box-shadow: 2px 3px 0 #020302; }
+  .destiny-screen.stage-attributes .filing-main .die small { width: 65%; padding: 1px 3px; font-size: 7px; }
+  .destiny-screen.stage-attributes .filing-main .die strong { margin: 2px 0 0; font-size: 22px; }
+  .destiny-screen.stage-attributes .filing-main .die i { font-size: 6px; }
+  .destiny-screen.stage-result .filing-main .fate-details article { padding: 5px 9px; box-shadow: 2px 3px 0 #020302; }
+  .destiny-screen.stage-result .filing-main .fate-details article small { padding: 1px 3px; font-size: 6px; }
+  .destiny-screen.stage-result .filing-main .fate-details article b { margin: 3px 0 1px; font-size: 14px; }
+  .destiny-screen.stage-result .filing-main .fate-details .detail { font-size: 6px; line-height: 1.25; }
+  .destiny-screen.stage-attributes > .contract-actions,.destiny-screen.stage-result > .contract-actions { gap: 8px; }
+  .destiny-screen.stage-attributes > .contract-actions button,.destiny-screen.stage-result > .contract-actions button,
+  .destiny-screen.stage-attributes > .contract-actions .accept,.destiny-screen.stage-result > .contract-actions .accept {
+    min-width: 180px;
+    height: 40px;
+    padding: 4px 12px;
+    font-size: 9px;
+  }
+  .contract-actions button small { font-size: 6px; }
+
+  .destiny-screen.stage-complete { grid-template-rows: 30px minmax(0,1fr); }
+  .destiny-screen.stage-complete .filing-complete {
+    grid-template-rows: 24px minmax(0,1fr) 38px 42px!important;
+    gap: 4px!important;
+    overflow: hidden;
+  }
+  .destiny-screen.stage-complete .filing-complete header { padding: 0 5px 3px; }
+  .destiny-screen.stage-complete .filing-complete header span { font-size: 16px; }
+  .destiny-screen.stage-complete .filing-complete header small { font-size: 7px; }
+  .destiny-screen.stage-complete .filing-complete article { min-height: 0; padding: 5px; gap: 2px; box-shadow: 2px 3px 0 #020302; }
+  .destiny-screen.stage-complete .filing-complete article > small { font-size: 12px; line-height: 1.2; }
+  .destiny-screen.stage-complete .filing-complete article strong { font-size: 20px; line-height: 1.12; }
+  .destiny-screen.stage-complete .filing-complete article > b { font-size: 5px; }
+  .lease-seal { width: 25px; height: 25px; border-width: 2px; font-size: 10px; }
+  .destiny-screen.stage-complete .filing-summary span { padding: 3px 5px; font-size: 6px; }
+  .destiny-screen.stage-complete .filing-summary b { font-size: 10px; }
+  .filing-complete-actions { gap: 7px; }
+  .filing-complete-actions button,.filing-complete-actions .enter-lease { min-width: 180px; height: 38px; padding: 4px 10px; font-size: 10px; }
+  .filing-complete-actions button small { font-size: 6px; }
+}

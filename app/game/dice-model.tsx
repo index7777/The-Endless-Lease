@@ -103,53 +103,9 @@ export function DiceModel({ value, rolling, seed = 0, label }: { value: number; 
 }
 
 export function DiceRollScene({ values, rolling }: { values: readonly number[]; rolling: boolean }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext("2d");
-    if (!canvas || !context) return;
-    let frame = 0;
-    const startedAt = performance.now();
-    const render = (now: number) => {
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      const width = canvas.clientWidth || 760, height = canvas.clientHeight || 390;
-      if (canvas.width !== Math.round(width*dpr) || canvas.height !== Math.round(height*dpr)) { canvas.width=Math.round(width*dpr); canvas.height=Math.round(height*dpr); }
-      context.setTransform(dpr,0,0,dpr,0,0); context.clearRect(0,0,width,height);
-      const table = context.createRadialGradient(width*.52,height*.42,20,width*.5,height*.5,width*.72);
-      table.addColorStop(0,"#55452f"); table.addColorStop(.45,"#2b241b"); table.addColorStop(1,"#080a08");
-      context.fillStyle=table; context.fillRect(0,0,width,height);
-      context.fillStyle="rgba(220,192,139,.06)"; for(let i=0;i<90;i++) context.fillRect((i*83)%width,(i*47)%height,1+(i%2),1);
-      const elapsed=(now-startedAt)/1000;
-      const dieSize=Math.min(width/9.3,height/4.3);
-      const destinations = values.map((_,index)=>({x:width*(.24+(index%3)*.26),y:height*(index<3?.38:.72)}));
-      destinations.forEach((destination,index)=>{
-        const seed=index*1.731;
-        const motion=rolling ? 1 : Math.max(0,1-elapsed/0.55);
-        const flight=rolling ? Math.abs(Math.sin(elapsed*6.5+seed)) : Math.sin(Math.min(1,elapsed/.55)*Math.PI*2.5)*motion;
-        const cx=destination.x + Math.sin(elapsed*4.1+seed)*width*.065*motion;
-        const cy=destination.y - Math.abs(flight)*height*.16*motion;
-        const angles:Angles=rolling
-          ? {x:elapsed*(7.4+index*.3)+seed,y:elapsed*(6.1+index*.23),z:elapsed*(3.2+index*.17)}
-          : finalAngles(values[index] ?? 1);
-        const view=(point:Vec3)=>rotate(rotate(point,angles),{x:-.48,y:.62,z:0});
-        const project=(point:Vec3):[number,number]=>[cx+point[0]*dieSize,cy-point[1]*dieSize];
-        const shadowScale=1-Math.min(.55,Math.abs(flight)*.42*motion);
-        context.save(); context.globalAlpha=.5*shadowScale; context.filter="blur(5px)"; context.fillStyle="#000"; context.beginPath(); context.ellipse(cx+6,destination.y+dieSize*.72,dieSize*.95*shadowScale,dieSize*.24*shadowScale,0,0,Math.PI*2); context.fill(); context.restore();
-        const faces=FACE_CONFIG.map(face=>{const center=view(face.normal),u=view(face.u),v=view(face.v);const corners=[add(add(center,u,-.84),v,-.84),add(add(center,u,.84),v,-.84),add(add(center,u,.84),v,.84),add(add(center,u,-.84),v,.84)];return{...face,center,u,v,corners,normal:view(face.normal)}}).filter(face=>face.normal[2]>0).sort((a,b)=>a.center[2]-b.center[2]);
-        for(const face of faces){
-          const points=face.corners.map(project); const light=Math.max(.48,.84+face.normal[0]*-.16+face.normal[1]*.22);
-          const gradient=context.createLinearGradient(points[0][0],points[0][1],points[2][0],points[2][1]);
-          gradient.addColorStop(0,`rgb(${Math.round(238*light)},${Math.round(226*light)},${Math.round(193*light)})`);gradient.addColorStop(1,`rgb(${Math.round(169*light)},${Math.round(157*light)},${Math.round(130*light)})`);
-          context.beginPath();points.forEach(([x,y],pointIndex)=>pointIndex?context.lineTo(x,y):context.moveTo(x,y));context.closePath();context.fillStyle=gradient;context.fill();context.strokeStyle="#443b2e";context.lineWidth=2.2;context.stroke();
-          context.save();context.clip();context.globalAlpha=.16;context.fillStyle="#594a36";for(let grain=0;grain<8;grain++){const gx=cx+Math.sin(grain*19+index*7)*dieSize*.7,gy=cy+Math.cos(grain*13+index*5)*dieSize*.7;context.fillRect(gx,gy,1.4,1.4)}context.restore();
-          for(const [px,py] of PIPS[face.value]){const position=add(add(face.center,face.u,px*1.18),face.v,py*1.18);const [x,y]=project(position);context.beginPath();context.arc(x,y,Math.max(3.2,dieSize*.078),0,Math.PI*2);context.fillStyle="#171715";context.fill();context.strokeStyle="rgba(255,240,205,.18)";context.lineWidth=1;context.stroke()}
-        }
-      });
-      const vignette=context.createRadialGradient(width/2,height/2,height*.18,width/2,height/2,width*.68);vignette.addColorStop(0,"transparent");vignette.addColorStop(1,"rgba(0,0,0,.72)");context.fillStyle=vignette;context.fillRect(0,0,width,height);
-      frame=requestAnimationFrame(render);
-    };
-    frame=requestAnimationFrame(render);
-    return()=>cancelAnimationFrame(frame);
-  },[rolling,values]);
-  return <canvas ref={canvasRef} className="dice-roll-scene" role="img" aria-label="六顆命運骰子投擲場景"/>;
+  return <div className={`dice-roll-scene ${rolling ? "is-rolling" : "is-settled"}`} role="img" aria-label={`命運裁定實體骰，六項結果 ${values.join("、")}`}>
+    <div className="fate-ledger" aria-hidden="true"/>
+    <img className="fate-die" src="/fate-die-v1.png" alt="" aria-hidden="true"/>
+    <span className="fate-stamp" aria-hidden="true">無期</span>
+  </div>;
 }

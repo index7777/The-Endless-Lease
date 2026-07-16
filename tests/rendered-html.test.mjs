@@ -21,10 +21,10 @@ test("server-renders the Traditional Chinese game shell", async () => {
   assert.match(html, /<html lang="zh-Hant">/i);
   assert.match(html, /<title>無期租寓/);
   assert.match(html, /class="game-shell is-menu"/);
-  assert.match(html, /入住登記/);
-  assert.match(html, /入住規約/);
-  assert.match(html, /租寓管理室/);
-  assert.match(html, /通知單已送達/);
+  assert.match(html, /走進公寓，撿起租屋字條/);
+  assert.match(html, /無期租約｜第 17 次輪迴/);
+  assert.match(html, /無期租寓/);
+  assert.match(html, /建議開啟聲音/);
   assert.match(html, /清除 B1、B2 底層異常源/);
   assert.match(html, /付得起租金，活得像人/);
   assert.doesNotMatch(html, developmentPreviewMeta);
@@ -52,8 +52,8 @@ test("ships the demo scene and character assets", async () => {
   assert.ok(publicFiles.includes("scene-registration-form-v1.png"));
   assert.match(game, /ATTRIBUTE_NAMES\.map\(\(name,\s*index\)\s*=>/);
   assert.match(game, /本輪住戶姓名/);
-  assert.match(game, /交付通知單/);
-  assert.match(game, /擲出裁定/);
+  assert.match(game, /接受資格審查/);
+  assert.match(game, /擲出結果/);
   assert.match(game, /HONG_YI_LINES\.registrationComplete/);
   assert.match(game, /setFilingStage\("ready"\); dispatchFlow\(\{ type: "RESTART" \}\)/);
   assert.match(globals, /\.elevator-console\s*\{[^}]*pointer-events\s*:\s*auto|\.settlement-paper[^}]*\.elevator-console\s*\{\s*pointer-events\s*:\s*auto/);
