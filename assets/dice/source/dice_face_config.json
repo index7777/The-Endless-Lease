@@ -1,0 +1,9 @@
+{
+  "positive_y": 1,
+  "negative_y": 6,
+  "positive_z": 2,
+  "negative_z": 5,
+  "positive_x": 3,
+  "negative_x": 4,
+  "opposites": [[1, 6], [2, 5], [3, 4]]
+}

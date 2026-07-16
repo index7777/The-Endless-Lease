@@ -1,0 +1,10 @@
+{
+  "engine": "Next.js Canvas Runtime",
+  "component": "DiceModel",
+  "component_path": "app/game/dice-model.tsx",
+  "result_prop": "value",
+  "rolling_prop": "rolling",
+  "accessible_label_prop": "label",
+  "non_looping_settle": true,
+  "responsive_dpr_limit": 2
+}

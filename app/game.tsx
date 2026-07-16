@@ -3,23 +3,26 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
 import { DEFECT_DESCRIPTIONS, DEMO_OPENING, DEMO_ROOMS, HONG_YI_LINES, IDENTITY_LORE, MANAGEMENT_COPY, TALENT_DESCRIPTIONS } from "./game/demo-content";
 import { gameFlowReducer, INITIAL_GAME_FLOW } from "./game/flow-state";
+import { ATTRIBUTE_NAMES, evaluateDestiny } from "./game/destiny-rules";
+import { DiceModel } from "./game/dice-model";
+import { isWalkable, probeGround, resolveSpawn } from "./game/scene-navigation";
+import { advanceDemoEnding, DEMO_ENDING_ZH_TW } from "./game/demo-ending";
+import type { DemoEndingState } from "./game/demo-ending";
+import { getTimePeriod, sampleCharacterExposure, SCENE_PRESENTATION, TIME_PERIOD_PROFILES } from "./game/presentation-profiles";
 import type { DebtEntry, Destiny, Enemy, FloorState, Location, Pickup, StorageKind, StorageStack } from "./game/model";
 
-const ATTRIBUTE_NAMES = ["體魄", "反應", "意志", "感知", "交涉", "異常親和"];
-const DIE_FACE_GLYPHS = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
-const IDENTITIES = ["清潔工", "醫師", "逃犯", "房仲", "靈媒", "前住戶"];
-const TALENTS = ["租緩", "窺層", "偽居", "契語", "蝕耐"] as const;
-const DEFECTS = ["貪息", "幻聽", "無家", "輕厄", "直白", "寡眠"] as const;
 const STARTING_FLOORS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
 const d6 = () => Math.floor(Math.random() * 6) + 1;
 const createDestiny = (previous?: Destiny): Destiny => {
+  const attributes = ATTRIBUTE_NAMES.map(() => d6());
+  const outcome = evaluateDestiny(attributes);
   return {
-    attributes: ATTRIBUTE_NAMES.map(() => d6()),
+    attributes,
     gender: previous?.gender ?? "male",
-    identity: IDENTITIES[Math.floor(Math.random() * IDENTITIES.length)],
-    talent: TALENTS[Math.floor(Math.random() * TALENTS.length)],
-    defect: DEFECTS[Math.floor(Math.random() * DEFECTS.length)],
+    identity: outcome.identity,
+    talent: outcome.talent,
+    defect: outcome.defect,
     floor: STARTING_FLOORS[Math.floor(Math.random() * STARTING_FLOORS.length)],
     roomSlot: 1 + Math.floor(Math.random() * 9),
   };
@@ -31,7 +34,7 @@ const ROOMS = DEMO_ROOMS;
 const WORLD_W = 1800;
 const WORLD_H = 900;
 const ROOM_W = 1000;
-const ELEVATOR_W = 420;
+const ELEVATOR_W = 1000;
 // Plaque anchors measured directly from scene-hallway-v1.png (1800 px source).
 const DOORS = [
   { slot: 1, x: 62, plaqueY: .325 }, { slot: 2, x: 246, plaqueY: .337 }, { slot: 3, x: 448, plaqueY: .337 },
@@ -145,7 +148,6 @@ export default function Game() {
   const destinyOpen = flow.screen === "destiny";
   const [destiny, setDestiny] = useState<Destiny>(() => ({ ...INITIAL_DESTINY, attributes: [...INITIAL_DESTINY.attributes] }));
   const [filingStage, setFilingStage] = useState<"ready" | "rolling" | "attributes" | "briefing" | "result" | "complete">("ready");
-  const [selectedFilingAttribute, setSelectedFilingAttribute] = useState<number | null>(null);
   const [residentName, setResidentName] = useState("");
   const paused = flow.paused;
   const settlement = flow.overlay.kind === "settlement";
@@ -159,6 +161,8 @@ export default function Game() {
   const [debtStatus, setDebtStatus] = useState({ arrears: 0, protectionLost: false });
   const [storage, setStorage] = useState<StorageStack[]>([]);
   const [storageCapacity, setStorageCapacity] = useState(5);
+  const [selectedStorageSlot, setSelectedStorageSlot] = useState<number | null>(null);
+  const [storageAmount, setStorageAmount] = useState<{ slot: number; direction: "store" | "take"; value: string } | null>(null);
   const storageOpen = flow.overlay.kind === "storage";
   const [message, setMessage] = useState("找到電梯，並在催租前湊齊 50 租券");
   const [residentLog, setResidentLog] = useState<string[]>([]);
@@ -170,6 +174,24 @@ export default function Game() {
   const drinkAudio = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(false);
   const [deathReady, setDeathReady] = useState(false);
+  const [demoEndingState, setDemoEndingState] = useState<DemoEndingState>("B2_ALIVE");
+  const [clearanceReportOpen, setClearanceReportOpen] = useState(false);
+  const [managementDialogueStep, setManagementDialogueStep] = useState<number | null>(null);
+  const [floor10NoticeOpen, setFloor10NoticeOpen] = useState(false);
+  const [demoEndingOpen, setDemoEndingOpen] = useState(false);
+  const [floor10Attempts, setFloor10Attempts] = useState(0);
+
+  const progressDemoEnding = useCallback((next: DemoEndingState) => {
+    setDemoEndingState(current => {
+      try { return advanceDemoEnding(current, next); }
+      catch { return current; }
+    });
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || demoEndingState === "B2_ALIVE") return;
+    window.localStorage.setItem("endless-lease.demo-ending", JSON.stringify({ state: demoEndingState, day: hud.day, registration: `17-B-${String(destiny.floor).padStart(2,"0")}${destiny.roomSlot}` }));
+  }, [demoEndingState, destiny.floor, destiny.roomSlot, hud.day]);
 
   useEffect(() => {
     if (!started || !message) return;
@@ -296,6 +318,10 @@ export default function Game() {
       phaseFlash: 0,
     };
     setHud({ hp: maxHp, stamina: maxStamina, rent: 30 + lowPowerBonus, time: 720, score: power, day: 1, rentDue: baseRentForFloor(destiny.floor, 0, destiny.attributes[4]), debt: 0, mortgageLayers: 0, taskKills: 0, landlordTask: false, floor: destiny.floor, attention: 0, weaponLevel: 1, medkits: 1, keysOwned: 0, skillCooldown: 0, bossB1: false, bossB2: false });
+    const roomSpawn = resolveSpawn("room", "from_hallway", ROOM_W, canvasRef.current?.clientHeight || 900);
+    game.current.player.x = roomSpawn.ground.x;
+    game.current.player.y = roomSpawn.ground.y;
+    game.current.player.facing = roomSpawn.spawn.facing;
     setMessage(`${MANAGEMENT_COPY.checkIn} 承租房：${roomNumber(destiny.floor, destiny.roomSlot)}`);
     setLocation("room");
     setActiveRoom(destiny.roomSlot);
@@ -307,6 +333,13 @@ export default function Game() {
     setResidentLog([]);
     setLogOpen(false);
     setElevatorTarget(null);
+    setDemoEndingState("B2_ALIVE");
+    setClearanceReportOpen(false);
+    setManagementDialogueStep(null);
+    setFloor10NoticeOpen(false);
+    setDemoEndingOpen(false);
+    setFloor10Attempts(0);
+    if (typeof window !== "undefined") window.localStorage.removeItem("endless-lease.demo-ending");
     dispatchFlow({ type: "START_RUN" });
     startAmbience();
   }, [destiny, startAmbience]);
@@ -563,9 +596,9 @@ export default function Game() {
     setHud(value => ({ ...value, score: g.score, rent: g.rent, keysOwned: g.keysOwned }));
   }, [roomEvent, sound]);
 
-  const transferStorage = useCallback((kind: StorageKind, direction: "store" | "take") => {
+  const transferStorage = useCallback((kind: StorageKind, direction: "store" | "take", slot: number, requestedAmount = 1) => {
     const g = game.current;
-    const maxStack = kind === "rent" ? 99 : 5;
+    const maxStack = kind === "rent" ? Number.MAX_SAFE_INTEGER : 5;
     const inventoryAmount = () => kind === "rent" ? g.rent : kind === "medkits" ? g.medkits : g.keysOwned;
     const changeInventory = (amount: number) => {
       if (kind === "rent") g.rent += amount;
@@ -575,31 +608,30 @@ export default function Game() {
     setStorage(current => {
       const next = current.map(stack => ({ ...stack }));
       if (direction === "store") {
-        const amount = Math.min(kind === "rent" ? 10 : 1, inventoryAmount());
+        const amount = Math.min(Math.max(1, Math.floor(requestedAmount)), inventoryAmount());
         if (amount <= 0) return current;
-        let stack = next.find(item => item.kind === kind && item.quantity < maxStack);
+        let stack = next.find(item => item.slot === slot);
+        if (stack && stack.kind !== kind) return current;
         if (!stack) {
-          if (next.length >= storageCapacity) return current;
-          stack = { id: storageId.current++, kind, quantity: 0 };
+          stack = { id: storageId.current++, slot, kind, quantity: 0 };
           next.push(stack);
         }
         const moved = Math.min(amount, maxStack - stack.quantity);
         stack.quantity += moved; changeInventory(-moved);
       } else {
-        const stack = next.find(item => item.kind === kind);
+        const stack = next.find(item => item.slot === slot && item.kind === kind);
         if (!stack) return current;
-        const moved = Math.min(kind === "rent" ? 10 : 1, stack.quantity);
+        const moved = Math.min(Math.max(1, Math.floor(requestedAmount)), stack.quantity);
         stack.quantity -= moved; changeInventory(moved);
         if (stack.quantity === 0) next.splice(next.findIndex(item => item.id === stack.id), 1);
       }
       setHud(value => ({ ...value, rent: g.rent, medkits: g.medkits, keysOwned: g.keysOwned }));
       return next;
     });
-  }, [storageCapacity]);
+  }, []);
 
   const beginFiling = useCallback(() => {
     if (filingStage === "rolling") return;
-    setSelectedFilingAttribute(null);
     setFilingStage("rolling"); sound("dice");
     window.setTimeout(() => sound("dice"), 420);
     window.setTimeout(() => sound("dice"), 860);
@@ -650,6 +682,7 @@ export default function Game() {
           if (item.type === "藥品") { g.medkits += 1; setMessage("拾取過期藥品：已放入道具欄"); }
           if (item.type === "鑰匙") { g.keysOwned += 1; g.score += 12; setMessage("取得老舊房門鑰匙"); }
           if (item.type === "裝備") { g.weaponLevel = Math.min(3, g.weaponLevel + 1); g.score += 30; setMessage(`取得改造鋼管：武器提升至 ${g.weaponLevel} 級`); }
+          if (item.type === "特殊權限卡") { progressDemoEnding("KEYCARD_COLLECTED"); setClearanceReportOpen(true); setMessage("關鍵物件已取得：特殊權限卡・10F"); }
           setHud(value => ({ ...value, rent: g.rent, score: g.score, medkits: g.medkits, keysOwned: g.keysOwned, weaponLevel: g.weaponLevel }));
           return;
         }
@@ -659,12 +692,15 @@ export default function Game() {
       if (nearbyDoor) {
         const isOwnRoom = g.floor === destiny.floor && nearbyDoor.slot === destiny.roomSlot;
         const eventRoom = ROOMS.find(room => room.slot === nearbyDoor.slot);
-        if (!isOwnRoom && !eventRoom) {
+        const isManagementOffice = g.floor === 6 && nearbyDoor.slot === 9 && ["CLEARANCE_REPORT_VIEWED","FLOOR10_BUTTON_DISCOVERED","RETURN_TO_OFFICE"].includes(demoEndingState);
+        const isFloor10NoticeRoom = g.floor === 6 && nearbyDoor.slot === 1 && demoEndingState === "POST_B2_FREE_ROAM";
+        if (!isOwnRoom && !eventRoom && !isManagementOffice && !isFloor10NoticeRoom) {
           setMessage(`${roomNumber(g.floor, nearbyDoor.slot)} 屬於其他住戶；多人模式需由屋主邀請、授權或使用特殊規則才能進入`);
           return;
         }
         const doorX = nearbyDoor.x;
-        g.player.x = 145; g.camera = 0;
+        const roomSpawn = resolveSpawn("room", "from_hallway", ROOM_W, canvasRef.current?.clientHeight || 900);
+        g.player.x = roomSpawn.ground.x; g.player.y = roomSpawn.ground.y; g.player.facing = roomSpawn.spawn.facing; g.camera = 0;
         g.enemies.forEach((enemy, index) => {
           if (enemy.hp > 0 && enemy.location === "hallway" && enemy.followsIndoors && Math.abs(enemy.x - doorX) < 430) {
             enemy.location = "room"; enemy.roomSlot = nearbyDoor.slot; enemy.x = 65 + index * 34; enemy.y = 320 + (index % 2) * 120;
@@ -677,7 +713,16 @@ export default function Game() {
           entryMessage = `租金保護已失效：牆膜侵蝕開始，${pursuit.count} 名第 ${pursuit.threat} 級追租者侵入房間`;
         }
         keys.current = {};
-        setActiveRoom(nearbyDoor.slot); setLocation("room");
+        setActiveRoom(isManagementOffice ? -99 : nearbyDoor.slot); setLocation("room");
+        if (isManagementOffice) {
+          if (demoEndingState !== "RETURN_TO_OFFICE") progressDemoEnding("RETURN_TO_OFFICE");
+          setManagementDialogueStep(0);
+          entryMessage = "租寓管理室｜將特殊權限卡放到櫃檯上";
+        } else if (isFloor10NoticeRoom) {
+          progressDemoEnding("FLOOR10_NOTICE_DISCOVERED");
+          setFloor10NoticeOpen(true);
+          entryMessage = "門縫下壓著一張不屬於管理室格式的通知單。";
+        }
         setMessage(entryMessage); sound("rent");
         return;
       }
@@ -703,14 +748,15 @@ export default function Game() {
           enemy.location = "hallway"; enemy.roomSlot = undefined; enemy.x = clamp(returnX + (enemy.x - localPlayerX), 55, WORLD_W - 55);
         }
       });
-      g.player.x = returnX; g.camera = clamp(returnX - 420, 0, WORLD_W - 900);
+      const hallwayGround = probeGround("hallway", returnX, WORLD_W, canvasRef.current?.clientHeight || 900, g.player.y);
+      g.player.x = returnX; g.player.y = hallwayGround.y; g.player.facing = 1; g.camera = clamp(returnX - 420, 0, WORLD_W - 900);
       keys.current = {};
       dispatchFlow({ type: "CLOSE_OVERLAY" }); setLocation("hallway"); setActiveRoom(null);
       setMessage("返回公共走廊");
       return;
     }
     const activeEvent = ROOMS.find(room => room.slot === activeRoom);
-    const interactionX = location === "elevator" ? 330 : activeEvent?.id === 2 ? 430 : 790;
+    const interactionX = location === "elevator" ? 850 : activeEvent?.id === 2 ? 430 : 790;
     if (Math.abs(g.player.x - interactionX) < (location === "elevator" ? 62 : 95)) {
       keys.current = {};
       if (location === "elevator") {
@@ -729,7 +775,7 @@ export default function Game() {
         }
       }
     }
-  }, [activeRoom, destiny.attributes, destiny.defect, destiny.floor, destiny.roomSlot, location, sound, spawnRentPursuers]);
+  }, [activeRoom, demoEndingState, destiny.attributes, destiny.defect, destiny.floor, destiny.roomSlot, location, progressDemoEnding, sound, spawnRentPursuers]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -793,6 +839,7 @@ export default function Game() {
       pickupMedicine: Object.assign(new Image(), { src: "/pickup-medicine-v1.png" }),
       pickupKey: Object.assign(new Image(), { src: "/pickup-key-v1.png" }),
       pickupEquipment: Object.assign(new Image(), { src: "/pickup-equipment-v1.png" }),
+      pickupKeycard10F: Object.assign(new Image(), { src: "/prop-keycard-floor10-v1.png" }),
     };
 
     const resize = () => {
@@ -820,8 +867,9 @@ export default function Game() {
         const len = Math.hypot(dx, dy) || 1;
         const sprint = keys.current.shift && p.stamina > 0 ? 1.55 : 1;
         const moveSpeed = 150 + destiny.attributes[1] * 15;
-        p.x = clamp(p.x + (dx / len) * moveSpeed * sprint * dt, 55, localWorldWidth - 55);
-        p.y = clamp(p.y + (dy / len) * moveSpeed * .72 * sprint * dt, band.top, band.bottom);
+        const candidateX = clamp(p.x + (dx / len) * moveSpeed * sprint * dt, 55, localWorldWidth - 55);
+        const candidateY = clamp(p.y + (dy / len) * moveSpeed * .72 * sprint * dt, band.top, band.bottom);
+        if (isWalkable(location, candidateX, candidateY, localWorldWidth, h)) { p.x = candidateX; p.y = candidateY; }
         for (const enemy of g.enemies) {
           if (enemy.location !== location) continue;
           if (enemy.y < band.top || enemy.y > band.bottom) enemy.y = band.top + 28 + ((enemy.x * .37) % Math.max(32, band.bottom - band.top - 45));
@@ -830,7 +878,7 @@ export default function Game() {
           if (item.y < band.top || item.y > band.bottom) item.y = band.top + 35 + ((item.x * .29) % Math.max(30, band.bottom - band.top - 48));
         }
         const activeEvent = ROOMS.find(room => room.slot === activeRoom);
-        const interactionX = location === "elevator" ? 330 : activeEvent?.id === 2 ? 430 : 790;
+        const interactionX = location === "elevator" ? 850 : activeEvent?.id === 2 ? 430 : 790;
         if ((roomEvent !== null || floorSelect || storageOpen) && Math.abs(p.x - interactionX) > (location === "elevator" ? 82 : 120)) {
           keys.current = {};
           dispatchFlow({ type: "CLOSE_OVERLAY" });
@@ -895,8 +943,9 @@ export default function Game() {
           const contactDistance = isBoss ? 78 : 58;
           if ((dist < (isBoss ? 620 : e.kind === "receipt" ? 550 : e.kind === "light" ? 450 : 330) || e.elite) && dist > contactDistance && (e.attackTimer ?? 0) <= 0) {
             const speed = e.elite ? 68 + (e.threat ?? 1) * 8 + g.attention * 2 : baseSpeed;
-            e.x += ((p.x - e.x) / safeDist) * speed * dt;
-            e.y += ((p.y - e.y) / safeDist) * (speed * .78) * dt;
+            const enemyX = e.x + ((p.x - e.x) / safeDist) * speed * dt;
+            const enemyY = e.y + ((p.y - e.y) / safeDist) * (speed * .78) * dt;
+            if (isWalkable(location, enemyX, enemyY, localWorldWidth, h, isBoss ? 42 : 25)) { e.x = enemyX; e.y = enemyY; }
             e.combatSeen = true;
           }
           if (dist < contactDistance) {
@@ -929,8 +978,10 @@ export default function Game() {
               setMessage(`${bossId === "boss_b1" ? "B1" : "B2"} 底層異常源已清除；特殊權限物已登記`);
               sound("rent");
               if (bossId === "boss_b2" && g.defeatedBosses.includes("boss_b1")) {
-                dispatchFlow({ type: "COMPLETE_DEMO" });
-                setMessage("清剿底層異常源完成：Demo 通關");
+                g.pickups.push({ x: e.x, y: e.y, type: "特殊權限卡", taken: false });
+                setDemoEndingState("B2_DEFEATED");
+                window.setTimeout(() => progressDemoEnding("KEYCARD_DROPPED"), 650);
+                setMessage(DEMO_ENDING_ZH_TW["demo.b2.defeat.objective_pickup"]);
               }
               continue;
             }
@@ -964,10 +1015,25 @@ export default function Game() {
         ctx.fillStyle = "rgba(4,7,6,.12)";
         ctx.fillRect(0, 0, sceneWidth, h);
       }
+      const timeProfile = TIME_PERIOD_PROFILES[getTimePeriod(g.time)];
+      ctx.save();
+      ctx.globalCompositeOperation = "multiply";
+      ctx.fillStyle = `rgba(${timeProfile.cold > 0 ? 8 : 35},${timeProfile.cold > 0 ? 18 : 22},${timeProfile.cold > 0 ? 29 : 12},${Math.max(0, 1 - timeProfile.exposure) * .58})`;
+      ctx.fillRect(0, 0, sceneWidth, h);
+      ctx.restore();
+      for (const lightX of SCENE_PRESENTATION[location].lights) {
+        const gradient = ctx.createRadialGradient(sceneWidth * lightX, h * .28, 8, sceneWidth * lightX, h * .42, h * .42);
+        gradient.addColorStop(0, `rgba(198,215,207,${.12 * timeProfile.practicalIntensity})`);
+        gradient.addColorStop(.45, `rgba(154,173,166,${.045 * timeProfile.practicalIntensity})`);
+        gradient.addColorStop(1, "transparent");
+        ctx.fillStyle = gradient; ctx.fillRect(0, 0, sceneWidth, h);
+      }
       if (location === "hallway") {
       for (const door of DOORS) {
         const own = g.floor === destiny.floor && door.slot === destiny.roomSlot;
         const eventRoom = ROOMS.find(room => room.slot === door.slot);
+        const managementOffice = g.floor === 6 && door.slot === 9 && ["CLEARANCE_REPORT_VIEWED","FLOOR10_BUTTON_DISCOVERED","RETURN_TO_OFFICE"].includes(demoEndingState);
+        const floor10Notice = g.floor === 6 && door.slot === 1 && demoEndingState === "POST_B2_FREE_ROAM";
         const focused = !g.activeBoss && Math.abs(p.x - door.x) < 72 && p.y < band.top + 90;
         if (!g.activeBoss) {
           ctx.fillStyle = own ? "#dfca8d" : "#c5b99b"; ctx.font = "600 13px serif";
@@ -979,22 +1045,22 @@ export default function Game() {
           ctx.fillStyle = "rgba(10,12,10,.82)"; ctx.fillRect(door.x - 48, band.top - 28, 96, 24);
           ctx.strokeStyle = own ? "#b69a57" : "#776452"; ctx.strokeRect(door.x - 48, band.top - 28, 96, 24);
           ctx.fillStyle = own ? "#dfca8d" : "#c5b99b"; ctx.font = "700 12px serif";
-          ctx.fillText(own ? "你的房間｜E" : eventRoom ? "可探索｜E" : "其他住戶", door.x - 38, band.top - 11);
+          ctx.fillText(managementOffice ? "管理室｜E" : floor10Notice ? "601 通知｜E" : own ? "你的房間｜E" : eventRoom ? "可探索｜E" : "其他住戶", door.x - 38, band.top - 11);
         }
       }
-      if (!g.activeBoss && Math.abs(p.x - HALLWAY_ELEVATOR_X) < 115 && p.y < band.top + 105) {
+      if (Math.abs(p.x - HALLWAY_ELEVATOR_X) < (g.activeBoss ? 260 : 115) && p.y < band.top + 125) {
         ctx.fillStyle = "rgba(10,12,10,.82)"; ctx.fillRect(HALLWAY_ELEVATOR_X - 54, band.top - 34, 108, 28);
         ctx.strokeStyle = "#8b8069"; ctx.strokeRect(HALLWAY_ELEVATOR_X - 54, band.top - 34, 108, 28);
         ctx.fillStyle = "#d1c3a1"; ctx.font = "700 15px serif"; ctx.fillText("電梯｜E", HALLWAY_ELEVATOR_X - 34, band.top - 15);
       }
 
       for (const item of g.pickups) if (!item.taken) {
-        const bob = Math.sin(now / 300 + item.x) * 4;
-        const pickupImage = item.type === "租券" ? sceneImages.pickupRent : item.type === "藥品" ? sceneImages.pickupMedicine : item.type === "裝備" ? sceneImages.pickupEquipment : sceneImages.pickupKey;
+        const bob = 0;
+        const pickupImage = item.type === "租券" ? sceneImages.pickupRent : item.type === "藥品" ? sceneImages.pickupMedicine : item.type === "裝備" ? sceneImages.pickupEquipment : item.type === "特殊權限卡" ? sceneImages.pickupKeycard10F : sceneImages.pickupKey;
         const pickupDepth = clamp((item.y - band.top) / Math.max(1, band.bottom - band.top), 0, 1);
         const pickupSize = 52 + pickupDepth * 16;
         ctx.fillStyle = "rgba(0,0,0,.38)"; ctx.beginPath(); ctx.ellipse(item.x, item.y + 5, pickupSize * .36, 8, 0, 0, Math.PI * 2); ctx.fill();
-        if (pickupImage.complete) ctx.drawImage(pickupImage, item.x - pickupSize / 2, item.y - pickupSize * .72 + bob, pickupSize, pickupSize);
+        if (pickupImage.complete) { ctx.save(); ctx.translate(item.x, item.y - pickupSize * .22); ctx.rotate(((item.x % 29) - 14) * .012); ctx.scale(1, .72); ctx.filter = `brightness(${sampleCharacterExposure(location, item.x / sceneWidth, g.time)})`; ctx.drawImage(pickupImage, -pickupSize / 2, -pickupSize / 2 + bob, pickupSize, pickupSize); ctx.restore(); }
         if (Math.hypot(item.x - p.x, item.y - p.y) < 105) {
           ctx.fillStyle = "rgba(10,12,10,.8)"; ctx.fillRect(item.x - 35, item.y - pickupSize - 5, 70, 20);
           ctx.fillStyle = "#d7c9a6"; ctx.font = "700 11px serif"; ctx.fillText(`${item.type}｜E`, item.x - 27, item.y - pickupSize + 9);
@@ -1007,8 +1073,8 @@ export default function Game() {
         if (p.x < 175) { ctx.fillStyle = "rgba(9,12,10,.72)"; ctx.fillRect(15, h * .22, 125, 34); ctx.fillStyle = "#d0c29d"; ctx.font = "700 14px serif"; ctx.fillText("E 返回走廊", 25, h * .255); }
         if (Math.abs(p.x - (activeEvent?.id === 2 ? 430 : 790)) < 145) { ctx.fillStyle = "rgba(9,12,10,.72)"; ctx.fillRect(promptX, h * .38, 180, 64); ctx.fillStyle = "#d0c29d"; ctx.font = "700 16px serif"; ctx.fillText(own ? "個人儲物櫃" : activeEvent?.id === 0 ? "發霉冰箱" : activeEvent?.id === 1 ? "封鎖牆面" : "住戶診療台", promptX + 15, h * .43); ctx.font = "13px serif"; ctx.fillText(own ? "靠近按 E 整理" : "靠近按 E 探索", promptX + 15, h * .47); }
       } else {
-        ctx.fillStyle = "rgba(9,12,10,.75)"; ctx.fillRect(12, h * .25, 80, 30); ctx.fillRect(286, h * .63, 110, 34);
-        ctx.fillStyle = "#d0c29d"; ctx.font = "700 12px serif"; ctx.fillText("E 離開", 24, h * .28); ctx.fillText("控制盤｜E 操作", 297, h * .67);
+        ctx.fillStyle = "rgba(9,12,10,.75)"; ctx.fillRect(12, h * .25, 80, 30); ctx.fillRect(750, h * .63, 220, 34);
+        ctx.fillStyle = "#d0c29d"; ctx.font = "700 12px serif"; ctx.fillText("E 離開", 24, h * .28); ctx.fillText(g.floor <= 0 ? "維修貨梯控制盤｜E 操作" : "控制盤｜E 操作", 765, h * .67);
       }
       for (const e of g.enemies) if (e.hp > 0 && e.location === location && (location !== "room" || e.roomSlot === activeRoom)) {
         const isBoss = e.kind === "boss_b1" || e.kind === "boss_b2";
@@ -1021,7 +1087,7 @@ export default function Game() {
         const attackProgress = attacking ? 1 - (e.attackTimer ?? 0) / (isBoss ? .68 : .48) : 0;
         const lunge = attacking ? Math.sin(attackProgress * Math.PI) * (isBoss ? 18 : 11) : 0;
         ctx.fillStyle = `rgba(0,0,0,${.24 + enemyDepth * .18})`; ctx.beginPath(); ctx.ellipse(e.x, e.y + 3, (e.elite || isBoss ? 52 : 39) * enemyScale, (e.elite || isBoss ? 15 : 11) * enemyScale, 0, 0, Math.PI * 2); ctx.fill();
-        ctx.save(); ctx.translate(e.x + (p.x > e.x ? lunge : -lunge), e.y - Math.abs(step) * 1.6); ctx.scale(p.x > e.x ? -1 : 1, 1); ctx.rotate(step * .012);
+        ctx.save(); ctx.translate(e.x + (p.x > e.x ? lunge : -lunge), e.y - Math.abs(step) * 1.6); ctx.scale(p.x > e.x ? -1 : 1, 1); ctx.rotate(step * .012); ctx.filter = `brightness(${sampleCharacterExposure(location, e.x / sceneWidth, g.time)}) saturate(.86)`;
         if (e.kind === "wall" && !e.alerted) ctx.globalAlpha = .14;
         const enemyKey = e.kind === "boss_b1" ? (attacking ? "bossB1Attack" : "bossB1") : e.kind === "boss_b2" ? (attacking ? "bossB2Attack" : "bossB2") : e.kind === "light" ? "light" : e.kind === "receipt" ? "receipt" : e.elite || e.kind === "pursuer" ? (attacking ? "pursuerAttack" : "pursuer") : attacking ? "wallAttack" : "wall";
         const enemyCrops: Record<string, {x:number;y:number;w:number;h:number}> = {
@@ -1048,6 +1114,7 @@ export default function Game() {
       ctx.fillStyle = `rgba(0,0,0,${.28 + depth * .18})`;
       ctx.beginPath(); ctx.ellipse(0, 3, 42 * depthScale, 12 * depthScale, 0, 0, Math.PI * 2); ctx.fill();
       ctx.scale(p.facing, 1);
+      ctx.filter = `brightness(${sampleCharacterExposure(location, p.x / sceneWidth, g.time)}) saturate(.88)`;
       if (p.invuln > 0) ctx.globalAlpha = .45 + Math.sin(now / 35) * .25;
       const walkPhase = isMoving ? Math.floor(now / 105) % 4 : -1;
       const pose = g.dead ? "death" : p.attack > .29 ? "windup" : p.attack > 0 ? "attack" : isMoving ? (walkPhase % 2 === 0 ? "walk" : "walkTransition") : "idle";
@@ -1091,13 +1158,20 @@ export default function Game() {
     };
     animationFrame = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(animationFrame); window.removeEventListener("resize", resize); };
-  }, [activeRoom, flow.screen, paused, floorSelect, roomEvent, storageOpen, location, destiny.attributes, destiny.floor, destiny.roomSlot, destiny.gender, destiny.talent, destiny.defect, sound]);
+  }, [activeRoom, demoEndingState, flow.screen, paused, floorSelect, roomEvent, storageOpen, location, destiny.attributes, destiny.floor, destiny.roomSlot, destiny.gender, destiny.talent, destiny.defect, sound]);
 
   const joy = (x: number, y: number) => { touch.current = { x, y }; };
   const maxHp = 76 + destiny.attributes[0] * 5;
   const maxStamina = 72 + destiny.attributes[1] * 5;
   const attentionLabel = hud.attention <= 1 ? "未留意" : hud.attention <= 3 ? "低度監控" : hud.attention <= 5 ? "監控強化" : hud.attention <= 7 ? "高度關注" : hud.attention <= 9 ? "全面追蹤" : "回收程序";
   const managementBroadcast = /管理室|租約|租金|欠款|追租程序|居住權|結算/.test(message);
+  const endingObjective = ["KEYCARD_DROPPED","B2_DEFEATED"].includes(demoEndingState)
+    ? ["拾取異常物件","取得特殊權限卡"]
+    : ["KEYCARD_COLLECTED","CLEARANCE_REPORT_VIEWED","FLOOR10_BUTTON_DISCOVERED","RETURN_TO_OFFICE"].includes(demoEndingState)
+      ? ["返回管理室","交付特殊權限卡"]
+      : demoEndingState === "POST_B2_FREE_ROAM"
+        ? ["返回 601","查看門下通知單"]
+        : demoEndingState !== "B2_ALIVE" ? ["本輪紀錄","等待管理室封存"] : null;
 
   return (
     <main className={`game-shell ${started ? "is-started" : "is-menu"}`}>
@@ -1114,7 +1188,7 @@ export default function Game() {
         <button className="talent-button" onClick={useTalent} disabled={hud.skillCooldown > 0}><i>Q</i><b>{destiny.talent}</b><span>{hud.skillCooldown > 0 ? `${Math.ceil(hud.skillCooldown)}秒` : "可使用"}</span></button>
       </div>}
       {managementBroadcast ? <div key={message} className="mission"><small>管理室通知</small><span>{message}</span></div> : <div key={message} className="action-toast">{message}</div>}
-      {started && <div className="demo-goal"><small>目前目標</small><b>{hud.bossB1 ? "前往 B2" : "前往 B1"}</b><em>{hud.bossB1 ? "調查底層核心區" : "清除底層異常源"}</em></div>}
+      {started && <div className="demo-goal"><small>目前目標</small><b>{endingObjective?.[0] ?? (hud.bossB1 ? "前往 B2" : "前往 B1")}</b><em>{endingObjective?.[1] ?? (hud.bossB1 ? "調查底層核心區" : "清除底層異常源")}</em></div>}
       {hud.landlordTask && <div className="task-slip"><small>房東委託</small><b>清除追租異常</b><span>{hud.taskKills} / 2</span></div>}
       {started && <section className={`lease-status ${hud.debt > 0 ? "overdue" : ""}`}><h3>租約狀態</h3><dl><div><dt>欠款</dt><dd>{hud.debt} 租券</dd></div><div><dt>追租程序</dt><dd>{hud.debt > 0 ? "已啟動" : "未啟動"}</dd></div><div><dt>承租房保護</dt><dd>{debtStatus.protectionLost ? "失效" : "有效"}</dd></div><div><dt>公寓關注度</dt><dd>{Math.min(10,hud.attention)} / 10</dd></div><div><dt>監控狀態</dt><dd>{attentionLabel}</dd></div></dl></section>}
       {mortgageMarks.length > 0 && <div className="mortgage-status"><small>能力抵押／輪迴保留</small><b>{mortgageMarks.join("　")}</b></div>}
@@ -1125,16 +1199,16 @@ export default function Game() {
       </div>
       {paused && !logOpen && <section className="pause-menu"><div><small>無期租寓管理室</small><h2>暫停</h2><button onClick={() => dispatchFlow({type:"TOGGLE_PAUSE"})}>繼續遊戲</button><button onClick={() => setLogOpen(true)}>住戶紀錄</button><button onClick={() => setMuted(value => !value)}>{muted ? "開啟聲音" : "靜音"}</button><p>快捷鍵　WASD 移動　Shift 奔跑　Space 攻擊　E 互動　Q 天賦</p></div></section>}
       {logOpen && <section className="resident-log"><div><header><small>住戶個人文件</small><h2>住戶執行紀錄</h2><button onClick={() => setLogOpen(false)}>關閉</button></header><p>此處只記錄本輪住戶的行動與結果，不屬於管理室公告。</p><ol>{residentLog.length ? residentLog.map((entry,index)=><li key={`${entry}-${index}`}>{entry}</li>) : <li>本輪尚無執行紀錄。</li>}</ol></div></section>}
-      {flow.screen === "title" && <div className="start-screen"><div className="start-copy"><p>入住通知單已送達</p><h1>無期租寓</h1><blockquote className="title-slogan"><span>每一次入住，都是一次命運抵押</span><span>記憶歸零，登記紀錄不會</span></blockquote><button onClick={() => { startAmbience(); sound("rent"); dispatchFlow({ type: "OPEN_INTRO" }); }}>開始入住登記</button><small className="current-lease"><b>入住規約</b><span>按日繳租，維持居住權</span><em>建議配戴耳機</em></small></div><aside className="title-office-sign"><b>租寓管理室</b><small>訪客請先登記</small></aside><div className="title-notice"><b>無期租寓通知單</b><span>入寓抵債，萬事皆平</span><small>管理室　啟</small></div></div>}
+      {flow.screen === "title" && <div className="start-screen"><div className="start-copy"><p>無期租寓管理室</p><h1><img src="/logo-title-v1.png" alt="無期租寓"/></h1><blockquote className="title-slogan"><span>付得起租金，活得像人</span><span>付不起租金，歸於樓宇</span></blockquote><button className="asset-button" onClick={() => { startAmbience(); sound("rent"); dispatchFlow({ type: "OPEN_INTRO" }); }}>開始入住登記</button><small className="current-lease"><b>入住規約</b><span>按日繳租，維持居住權</span><em>建議配戴耳機</em></small></div><aside className="title-office-sign"><b>租寓管理室</b><small>訪客請先登記</small></aside><div className="title-notice"><b>通知單已送達</b><span>請至管理室完成登記</span><small>管理室　啟</small></div></div>}
       {introOpen && <section className="intro-screen"><article className="intro-contract"><small>租寓管理室｜入住通知單｜表單 01-A</small><h2>入寓抵債，萬事皆平</h2>{DEMO_OPENING.map(paragraph => <p key={paragraph}>{paragraph}</p>)}<blockquote>「記憶歸零，債務留存。命運重擲，租約無期。」</blockquote><label className="intro-name"><span>本輪住戶姓名</span><input value={residentName} maxLength={18} autoComplete="off" onChange={event => setResidentName(event.target.value)} placeholder="請填寫姓名"/><small>管理室將先以登記編號稱呼你</small></label><div className="intro-gender"><span>本輪住戶性別</span><button className={destiny.gender === "male" ? "selected" : ""} onClick={() => setDestiny(value => ({...value, gender:"male"}))}>男性</button><button className={destiny.gender === "female" ? "selected" : ""} onClick={() => setDestiny(value => ({...value, gender:"female"}))}>女性</button></div><button disabled={!residentName.trim()} onClick={() => { setFilingStage("ready"); dispatchFlow({ type: "OPEN_DESTINY" }); sound("rent"); }}>交付通知單</button><small className="intro-rules">入住規約｜提交後，管理室將依登記資料建立本輪檔案。</small></article></section>}
       {!started && destinyOpen && <section className="destiny-screen">
         <nav className="filing-progress" aria-label="租約建檔進度"><span className={filingStage === "ready" || filingStage === "rolling" ? "active" : "done"}>骰子結果</span><i>›</i><span className={filingStage === "attributes" ? "active" : filingStage === "briefing" || filingStage === "result" || filingStage === "complete" ? "done" : ""}>選擇建檔</span><i>›</i><span className={filingStage === "briefing" || filingStage === "result" || filingStage === "complete" ? "active" : ""}>身份確認</span></nav>
-        <div className="contract-head"><span>無期租寓管理室</span><small>輪迴入住登記表｜表單 17-B</small><h2>租約建檔</h2><p>{filingStage === "complete" ? "建檔程序已完成。你的身份已被管理室正式存檔。" : filingStage === "result" ? "請確認本輪最終建檔內容；確認後資料不可撤回。" : filingStage === "attributes" ? "骰子已揭示可建檔項目，請選擇一項作為本輪建檔重點。" : "公寓正在決定你的本輪身份。"}</p><div className="dossier-rule"/><blockquote>{filingStage === "complete" ? "本輪居住權即刻生效。" : "在這裡，每一份檔案，都是你在這棟世界裡的存續證明。"}</blockquote><footer>◇ ROOM 17 ◇</footer></div>
-        {(filingStage === "ready" || filingStage === "rolling") && <div className="filing-die"><header><small>骰子結果</small><h3>命運裁定</h3><p>管理室將以六顆骰子裁定本輪能力；結果會影響後續可選建檔資料與居住條件。</p></header><div className={`six-dice-tray ${filingStage === "rolling" ? "rolling" : ""}`}>{ATTRIBUTE_NAMES.map((name,index)=><article key={name} className="roll-die" style={{animationDelay:`${index * .07}s`}}><span aria-label={`${name} ${destiny.attributes[index]} 點`}>{DIE_FACE_GLYPHS[destiny.attributes[index]]}</span><b>{name}</b><small>{destiny.attributes[index]} 點</small></article>)}</div><p className="roll-instruction">請擲出本輪六項建檔結果。</p><button disabled={filingStage === "rolling"} onClick={beginFiling}>{filingStage === "rolling" ? "裁定中…" : "擲出裁定"}<small>{filingStage === "rolling" ? "管理室正在記錄骰面" : "六顆骰子將同時裁定"}</small></button></div>}
-        {filingStage === "attributes" && <div className="filing-main"><header><h3>依骰子結果可建檔的項目</h3><span>{selectedFilingAttribute === null ? "請選擇一項進行建檔" : `已選擇：${ATTRIBUTE_NAMES[selectedFilingAttribute]}`}</span></header><div className="dice-grid filing-values">
-          {ATTRIBUTE_NAMES.map((name, index) => <button type="button" key={name} className={`die ${selectedFilingAttribute === index ? "selected" : ""}`} onClick={() => setSelectedFilingAttribute(index)}>
+        <div className="contract-head"><span>無期租寓管理室</span><small>輪迴入住登記表｜表單 17-B</small><h2>租約建檔</h2><p>{filingStage === "complete" ? "建檔程序已完成。你的身份已被管理室正式存檔。" : filingStage === "result" ? "請確認本輪最終建檔內容；確認後資料不可撤回。" : filingStage === "attributes" ? "六項骰面已完成記錄；可直接提交，或重新擲出裁定。" : "公寓正在決定你的本輪身份。"}</p><div className="dossier-rule"/><blockquote>{filingStage === "complete" ? "本輪居住權即刻生效。" : "在這裡，每一份檔案，都是你在這棟世界裡的存續證明。"}</blockquote><footer>◇ ROOM 17 ◇</footer></div>
+        {(filingStage === "ready" || filingStage === "rolling") && <div className="filing-die"><header><small>骰子結果</small><h3>命運裁定</h3><p>管理室將以六顆骰子裁定本輪能力；相同骰面組合永遠對應相同身份與天賦。</p></header><div className={`six-dice-tray ${filingStage === "rolling" ? "rolling" : ""}`}>{ATTRIBUTE_NAMES.map((name,index)=><article key={name} className="roll-die"><DiceModel value={destiny.attributes[index]} rolling={filingStage === "rolling"} seed={index} label={name}/><b>{name}</b><small>{destiny.attributes[index]} 點</small></article>)}</div><p className="roll-instruction">請擲出本輪六項建檔結果。</p><button className="asset-button" disabled={filingStage === "rolling"} onClick={beginFiling}>{filingStage === "rolling" ? "裁定中…" : "擲出裁定"}<small>{filingStage === "rolling" ? "管理室正在記錄骰面" : "六顆骰子將同時裁定"}</small></button></div>}
+        {filingStage === "attributes" && <div className="filing-main"><header><h3>本輪骰子結果</h3><span>可直接提交，或重新擲出裁定</span></header><div className="dice-grid filing-values">
+          {ATTRIBUTE_NAMES.map((name, index) => <article key={name} className="die">
             <small>{name}</small><strong style={{animationDelay:`${index * .42}s`}}>{destiny.attributes[index]}</strong><i>管理室建檔</i>
-          </button>)}
+          </article>)}
         </div></div>}
         {filingStage === "result" && <div className="filing-main"><header><h3>確認你的最終建檔內容</h3><span>請確認資訊後完成建檔</span></header><div className="fate-details filing-result">
           <article><small>身份背景</small><b>{destiny.identity}</b><p className="detail">{IDENTITY_LORE[destiny.identity]}（Demo 僅保留背景敘述，專屬能力尚未實裝。）</p></article>
@@ -1142,10 +1216,10 @@ export default function Game() {
           <article className="defect" title={DEFECT_DESCRIPTIONS[destiny.defect]}><small>缺陷／詛咒</small><b>{destiny.defect}</b><p className="detail">{DEFECT_DESCRIPTIONS[destiny.defect]}</p></article>
           <article><small>初始承租房</small><b>{roomNumber(destiny.floor, destiny.roomSlot)}</b><p className="detail">本輪從此房間出生；只有你與獲得授權的玩家可以正常進入。</p></article>
         </div></div>}
-        {filingStage === "attributes" && <div className="contract-actions"><button className="reroll" onClick={beginFiling}>再骰一次<small>重新獲得結果</small></button><button className="accept" disabled={selectedFilingAttribute === null} onClick={confirmIdentity}>提交<small>交付本輪建檔選擇</small></button></div>}
+        {filingStage === "attributes" && <div className="contract-actions"><button className="reroll" onClick={beginFiling}>再骰一次<small>重新獲得結果</small></button><button className="accept asset-button" onClick={confirmIdentity}>提交<small>依六骰結果建立身份</small></button></div>}
         {filingStage === "briefing" && <div className="hongyi-briefing" role="status" aria-live="polite"><small>租寓管理室｜紅怡</small><p>「{HONG_YI_LINES.registrationComplete}」</p><span>登記編號　17-B-{String(destiny.floor).padStart(2,"0")}{destiny.roomSlot}</span></div>}
         {filingStage === "result" && <div className="contract-actions"><button className="reroll" onClick={() => setFilingStage("attributes")}>返回修改</button><button className="accept" onClick={finishFiling}>確認建檔結果<small>建立正式檔案</small></button></div>}
-        {filingStage === "complete" && <div className="filing-complete"><header><span>建檔完成</span><small>居住權已正式生效</small></header><article><small>{residentName}，租約建檔完成。<br/>居住權已生效。</small><strong>無退租。<br/>無到期。<br/><em>無例外。</em></strong><b>ROOM 17 — DOSSIER SEALED</b></article><div className="filing-summary"><span>住戶姓名<b>{residentName}</b></span><span>身份背景<b>{destiny.identity}</b></span><span>天賦技能<b>{destiny.talent}</b></span><span>缺陷／詛咒<b>{destiny.defect}</b></span><span>初始租房<b>{roomNumber(destiny.floor, destiny.roomSlot)}</b></span></div><button className="enter-lease" onClick={reset}>進入 {roomNumber(destiny.floor, destiny.roomSlot)}<small>開始本輪入住</small></button></div>}
+        {filingStage === "complete" && <div className="filing-complete"><header><span>建檔完成</span><small>居住權已正式生效</small></header><article><small>租約建檔完成。<br/>居住權已生效。</small><strong><span>無退租。</span><span>無到期。</span><em>無例外。</em></strong><b>ROOM 17 — DOSSIER SEALED</b></article><div className="filing-summary"><span>身份背景<b>{destiny.identity}</b></span><span>天賦技能<b>{destiny.talent}</b></span><span>缺陷／詛咒<b>{destiny.defect}</b></span><span>初始租房<b>{roomNumber(destiny.floor, destiny.roomSlot)}</b></span></div><button className="enter-lease asset-button" onClick={reset}>進入 {roomNumber(destiny.floor, destiny.roomSlot)}<small>開始本輪入住</small></button></div>}
       </section>}
       {started && settlement && <section className="settlement-screen">
         <div className="settlement-paper">
@@ -1164,20 +1238,25 @@ export default function Game() {
         <p className="auto-choice">離開探索物件的互動範圍會關閉事件窗；要離開房間請走回門口。</p>
         <div>{ROOMS[roomEvent].choices.map((choice, index) => <button key={choice} onClick={() => resolveRoom(index)}>{choice}</button>)}</div>
       </div></section>}
-      {started && storageOpen && <section className="storage-screen"><div className="storage-panel"><header><small>{roomNumber(destiny.floor, destiny.roomSlot)}｜個人儲物櫃</small><h2>{storageCapacity} 格收納空間</h2><p>相同物品可堆疊；租券每格最多 99，藥品與鑰匙每格最多 5。容量只隨正式換房規則變更，本 Demo 不提供獨立付費擴充。</p></header><div className="storage-slots">{Array.from({ length: storageCapacity }, (_, index) => { const stack = storage[index]; return <article key={stack?.id ?? `empty-${index}`} className={stack ? "filled" : "empty"}><i>{index + 1}</i>{stack ? <><b>{stack.kind === "rent" ? "租券" : stack.kind === "medkits" ? "過期藥品" : "房門鑰匙"}</b><strong>×{stack.quantity}</strong><button onClick={() => transferStorage(stack.kind, "take")}>取出</button></> : <span>空格</span>}</article>; })}</div><div className="storage-actions"><button onClick={() => transferStorage("rent", "store")} disabled={hud.rent <= 0}>存入 10 租券</button><button onClick={() => transferStorage("medkits", "store")} disabled={hud.medkits <= 0}>存入 1 藥品</button><button onClick={() => transferStorage("keys", "store")} disabled={hud.keysOwned <= 0}>存入 1 鑰匙</button><button className="close-storage" onClick={() => dispatchFlow({ type: "CLOSE_OVERLAY", kind: "storage" })}>關閉櫃門</button></div></div></section>}
+      {started && storageOpen && <section className="storage-screen"><div className="storage-panel"><header><small>{roomNumber(destiny.floor, destiny.roomSlot)}｜住戶寄存櫃</small><h2>{storageCapacity} 格寄存位</h2><p>點擊寄存位後，從背包選取要寄存的物品。租券沒有堆疊上限，存入與取出時自行填寫數量。</p></header><div className="storage-slots">{Array.from({ length: storageCapacity }, (_, index) => { const stack = storage.find(item => item.slot === index); return <button type="button" key={stack?.id ?? `empty-${index}`} className={`${stack ? "filled" : "empty"} ${selectedStorageSlot === index ? "selected" : ""}`} onDragOver={event => event.preventDefault()} onDrop={event => { const kind = event.dataTransfer.getData("application/x-lease-item") as StorageKind; setSelectedStorageSlot(index); if (kind === "rent") setStorageAmount({slot:index,direction:"store",value:String(hud.rent)}); else if (kind) transferStorage(kind,"store",index,1); }} onClick={() => setSelectedStorageSlot(index)}><i>寄存位 {String(index + 1).padStart(2,"0")}</i>{stack ? <><b>{stack.kind === "rent" ? "租券" : stack.kind === "medkits" ? "過期藥品" : "房門鑰匙"}</b><strong>{stack.kind === "rent" ? stack.quantity : `×${stack.quantity}`}</strong><span>點擊管理</span></> : <span>目前空置</span>}</button>; })}</div>{selectedStorageSlot !== null && <div className="storage-backpack"><header><b>{storage.find(item => item.slot === selectedStorageSlot) ? "寄存位內容" : "住戶背包"}</b><button onClick={() => setSelectedStorageSlot(null)}>關閉</button></header>{(() => { const stack = storage.find(item => item.slot === selectedStorageSlot); if (stack) return <div className="stored-item"><b>{stack.kind === "rent" ? `租券 ${stack.quantity}` : stack.kind === "medkits" ? `過期藥品 ×${stack.quantity}` : `房門鑰匙 ×${stack.quantity}`}</b><button className="asset-button" onClick={() => stack.kind === "rent" ? setStorageAmount({slot:selectedStorageSlot,direction:"take",value:String(stack.quantity)}) : transferStorage(stack.kind,"take",selectedStorageSlot,1)}>取出</button></div>; return <div className="backpack-items"><button draggable disabled={hud.rent <= 0} onDragStart={event => event.dataTransfer.setData("application/x-lease-item","rent")} onClick={() => setStorageAmount({slot:selectedStorageSlot,direction:"store",value:String(hud.rent)})}>租券<b>{hud.rent}</b></button><button draggable disabled={hud.medkits <= 0} onDragStart={event => event.dataTransfer.setData("application/x-lease-item","medkits")} onClick={() => transferStorage("medkits","store",selectedStorageSlot,1)}>過期藥品<b>×{hud.medkits}</b></button><button draggable disabled={hud.keysOwned <= 0} onDragStart={event => event.dataTransfer.setData("application/x-lease-item","keys")} onClick={() => transferStorage("keys","store",selectedStorageSlot,1)}>房門鑰匙<b>×{hud.keysOwned}</b></button></div>; })()}</div>}{storageAmount && <div className="storage-amount-dialog" role="dialog" aria-modal="true"><label>{storageAmount.direction === "store" ? "存入" : "取出"}租券數量<input type="number" min="1" value={storageAmount.value} onChange={event => setStorageAmount({...storageAmount,value:event.target.value})}/></label><div><button onClick={() => setStorageAmount(null)}>取消</button><button className="asset-button" onClick={() => { transferStorage("rent",storageAmount.direction,storageAmount.slot,Number(storageAmount.value)); setStorageAmount(null); }}>確認</button></div></div>}<div className="storage-actions"><button className="close-storage asset-button" onClick={() => { setSelectedStorageSlot(null); setStorageAmount(null); dispatchFlow({ type: "CLOSE_OVERLAY", kind: "storage" }); }}>關閉櫃門</button></div></div></section>}
       {started && floorSelect && <section className={`floor-select-screen ${elevatorTarget ? "in-transit" : ""}`}><div className="elevator-console">
         <header><small>老式電梯控制盤</small><h2>請選擇目的樓層</h2><p>租金依承租樓層結算<br/>向下探索時，收益依樓層差衰減</p></header>
         <div className="floor-indicator"><small>樓層顯示</small><strong>{elevatorTarget ?? (game.current.activeBoss === "boss_b1" ? "B1" : game.current.activeBoss === "boss_b2" ? "B2" : hud.floor)}</strong><span>{elevatorTarget ? "運行中" : "待機"}</span></div>
         <div className="floor-buttons">
           {STARTING_FLOORS.map(floor => { const maxAccess = Math.min(9, destiny.floor + 3); const locked = floor > maxAccess; const current = !game.current.activeBoss && floor === hud.floor; const leased = floor === destiny.floor; const subtitle = floor === 1 ? "資源收益較低" : floor === 2 ? leased ? `承租房 ${roomNumber(destiny.floor,destiny.roomSlot)}` : "低風險探索" : floor === 3 ? "異常強度較低" : floor === 4 ? "事件收益提升" : floor === 5 ? "異常強度提升" : `最高通行權限 ${maxAccess}F`; return <button key={floor} disabled={locked || current || Boolean(elevatorTarget)} className={`${locked ? "locked" : ""} ${current ? "current" : ""} ${leased ? "leased" : ""} ${elevatorTarget === `${floor}F` ? "pressed" : ""}`} onClick={() => beginElevatorTravel(floor)}><strong>{floor}F</strong>{leased && <i>承租</i>}<b>{locked ? "租約權限不足" : current ? "目前所在" : leased ? "承租樓層" : floor <= 3 ? "安全避難層" : "博弈收益層"}</b><span>{subtitle}</span></button>; })}
+          {demoEndingState !== "B2_ALIVE" && <button className="floor10-pending" disabled={Boolean(elevatorTarget) || ["KEYCARD_DELIVERED","POST_B2_FREE_ROAM","FLOOR10_NOTICE_DISCOVERED","DEMO_ENDING_STARTED","DEMO_COMPLETED"].includes(demoEndingState)} onClick={() => { setFloor10Attempts(value => value + 1); if (demoEndingState === "CLEARANCE_REPORT_VIEWED") progressDemoEnding("FLOOR10_BUTTON_DISCOVERED"); setMessage(floor10Attempts === 0 ? DEMO_ENDING_ZH_TW["demo.elevator.floor10.first_interaction"] : DEMO_ENDING_ZH_TW["demo.elevator.floor10.repeat_interaction"]); sound("rent"); }}><strong>10F</strong><b>等待管理員核准</b><span>按鍵發出異常白光</span></button>}
           <button className={`boss-floor ${elevatorTarget === "B1" ? "pressed" : ""}`} disabled={hud.bossB1 || Boolean(elevatorTarget)} onClick={() => beginElevatorTravel("boss_b1")}><strong>B1</strong><b>{hud.bossB1 ? "今日已清除" : "底層異常源"}</b><span>目前主線目標</span></button>
           <button className={`boss-floor ${!hud.bossB1 ? "locked" : ""} ${elevatorTarget === "B2" ? "pressed" : ""}`} disabled={!hud.bossB1 || hud.bossB2 || Boolean(elevatorTarget)} onClick={() => beginElevatorTravel("boss_b2")}><strong>B2</strong><b>{hud.bossB2 ? "今日已清除" : hud.bossB1 ? "底層核心區" : "租約尚未允許"}</b><span>{hud.bossB1 ? "最終目標" : "須先清除 B1"}</span></button>
         </div>
         <aside><h3>租約狀態</h3><dl><div><dt>目前樓層</dt><dd>{game.current.activeBoss ? (game.current.activeBoss === "boss_b1" ? "B1" : "B2") : `${hud.floor}F`}</dd></div><div><dt>承租樓層</dt><dd>{destiny.floor}F</dd></div><div><dt>承租房號</dt><dd>{roomNumber(destiny.floor,destiny.roomSlot)}</dd></div><div><dt>今日租金</dt><dd>{hud.rentDue} 租券</dd></div><div><dt>欠租</dt><dd>{hud.debt > 0 ? `${hud.day - 1} 日` : "0 日"}</dd></div><div><dt>追租程序</dt><dd>{hud.debt > 0 ? "已啟動" : "未啟動"}</dd></div><div><dt>最高通行權限</dt><dd>{Math.min(9,destiny.floor+3)}F</dd></div></dl><p>日租倒數與追擊不中止</p></aside>
         {elevatorTarget && <div className="elevator-doors" aria-hidden="true"><i/><i/></div>}
       </div></section>}
+      {started && clearanceReportOpen && <section className="clearance-report-screen"><article className="clearance-report"><header><small>{DEMO_ENDING_ZH_TW["demo.b2.clearance.header"]}</small><b>清剿紀錄：B2-{String(hud.day).padStart(2,"0")}-{String(destiny.roomSlot).padStart(2,"0")}</b></header><h2>{DEMO_ENDING_ZH_TW["demo.b2.clearance.title"]}</h2><h3>{DEMO_ENDING_ZH_TW["demo.b2.clearance.subtitle"]}</h3><p>{DEMO_ENDING_ZH_TW["demo.b2.clearance.body"]}</p><div className="clearance-status">{(["status_b1","status_b2","status_power","status_elevator","status_floor10"] as const).map((key,index)=><span key={key} style={{animationDelay:`${.2 + index * .18}s`}}>{DEMO_ENDING_ZH_TW[`demo.b2.clearance.${key}`]}<i>{key === "status_floor10" ? "待核准" : key === "status_power" ? "已登記" : key === "status_b1" ? "已封鎖" : "已清除"}</i></span>)}</div><blockquote>「{DEMO_ENDING_ZH_TW["demo.b2.clearance.hongyi_message"]}」<small>——管理員・紅怡</small></blockquote><footer><button onClick={() => { progressDemoEnding("CLEARANCE_REPORT_VIEWED"); setClearanceReportOpen(false); setMessage(DEMO_ENDING_ZH_TW["demo.return_office.description"]); }}>查看戰場</button><button className="asset-button" onClick={() => { progressDemoEnding("CLEARANCE_REPORT_VIEWED"); setClearanceReportOpen(false); setMessage(DEMO_ENDING_ZH_TW["demo.return_office.description"]); }}>返回管理室<small>將特殊權限卡交給紅怡</small></button></footer></article></section>}
+      {started && managementDialogueStep !== null && <section className="hongyi-office-dialogue"><article><header><small>六樓｜租寓管理室</small><b>管理員・紅怡</b></header><p>「{[DEMO_ENDING_ZH_TW["demo.hongyi.keycard.intro"],DEMO_ENDING_ZH_TW["demo.hongyi.keycard.floor10"],DEMO_ENDING_ZH_TW["demo.hongyi.keycard.registration"],DEMO_ENDING_ZH_TW["demo.hongyi.keycard.conclusion"]][managementDialogueStep]}」</p><footer><span>特殊權限卡・10F</span><button className="asset-button" onClick={() => { if (managementDialogueStep < 2) { setManagementDialogueStep(managementDialogueStep + 1); return; } if (managementDialogueStep === 2) { progressDemoEnding("KEYCARD_DELIVERED"); setManagementDialogueStep(3); setMessage("特殊權限卡已由管理室登記；10F 仍待核准"); return; } progressDemoEnding("POST_B2_FREE_ROAM"); setManagementDialogueStep(null); setLocation("hallway"); setActiveRoom(null); game.current.floor = 6; game.current.activeBoss = null; game.current.player.x = 1450; game.current.player.y = probeGround("hallway",1450,WORLD_W,canvasRef.current?.clientHeight||900).y; game.current.camera = 900; setHud(value => ({...value,floor:6})); setMessage("返回 601。管理室允許你在封存紀錄前整理本輪物品。"); }}>{managementDialogueStep === 2 ? "交付並登記" : managementDialogueStep === 3 ? "離開管理室" : "繼續"}</button></footer></article></section>}
+      {started && floor10NoticeOpen && <section className="floor10-notice-screen"><article><small>{DEMO_ENDING_ZH_TW["demo.floor10.notice.header"]}</small><h2>{DEMO_ENDING_ZH_TW["demo.floor10.notice.title"]}</h2><p>{DEMO_ENDING_ZH_TW["demo.floor10.notice.body"]}</p><blockquote>{DEMO_ENDING_ZH_TW["demo.floor10.notice.inspect"]}</blockquote><button className="asset-button" onClick={() => { progressDemoEnding("DEMO_ENDING_STARTED"); setFloor10NoticeOpen(false); setDemoEndingOpen(true); }}>翻閱通知單</button></article></section>}
+      {started && demoEndingOpen && <section className="demo-ending-cinematic"><article><small>本輪紀錄｜已封存</small><h2>{DEMO_ENDING_ZH_TW["demo.ending.title"]}</h2><p>{DEMO_ENDING_ZH_TW["demo.ending.body"]}</p><strong>{DEMO_ENDING_ZH_TW["demo.ending.teaser"]}</strong><footer><button onClick={() => { setDemoEndingOpen(false); setLogOpen(true); }}>查看本輪紀錄</button><button className="asset-button" onClick={() => { progressDemoEnding("DEMO_COMPLETED"); setDemoEndingOpen(false); setFilingStage("ready"); dispatchFlow({type:"RESTART"}); }}>返回標題</button></footer></article></section>}
       {dead && deathReady && <button className="death" onClick={() => { game.current.dead = false; setFilingStage("ready"); dispatchFlow({ type: "RESTART" }); setLocation("hallway"); setActiveRoom(null); setDestiny(createDestiny()); }}>你已融入公寓<br/><span>重新入住</span></button>}
-      {complete && <section className="demo-complete"><div><small>無期租寓管理室｜Demo 通關紀錄</small><h2>底層異常源，清剿完成</h2><p>B1 與 B2 已依序停止活動。電梯控制盤上，一枚從未亮過的「10F」按鍵短暫發出白光。</p><blockquote>特殊權限卡與鑰匙已登記。真正的租約，仍在十樓以上。</blockquote><button onClick={() => { setFilingStage("ready"); dispatchFlow({ type: "RESTART" }); setDestiny(createDestiny()); }}>以新住戶再次入住</button></div></section>}
+      {complete && null}
     </main>
   );
 }

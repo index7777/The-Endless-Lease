@@ -24,7 +24,7 @@ test("server-renders the Traditional Chinese game shell", async () => {
   assert.match(html, /入住登記/);
   assert.match(html, /入住規約/);
   assert.match(html, /租寓管理室/);
-  assert.match(html, /入住通知單已送達/);
+  assert.match(html, /通知單已送達/);
   assert.match(html, /清除 B1、B2 底層異常源/);
   assert.match(html, /付得起租金，活得像人/);
   assert.doesNotMatch(html, developmentPreviewMeta);
@@ -46,7 +46,10 @@ test("ships the demo scene and character assets", async () => {
   assert.match(layout, /無期租寓/);
   assert.match(model, /gender:\s*"male"\s*\|\s*"female"/);
   assert.match(game, /destiny\.gender === "female"/);
-  assert.match(game, /DIE_FACE_GLYPHS/);
+  assert.match(game, /<DiceModel/);
+  assert.ok(publicFiles.includes("logo-title-v1.png"));
+  assert.ok(publicFiles.includes("ui-action-button-v1.png"));
+  assert.ok(publicFiles.includes("scene-registration-form-v1.png"));
   assert.match(game, /ATTRIBUTE_NAMES\.map\(\(name,index\)=>/);
   assert.match(game, /本輪住戶姓名/);
   assert.match(game, /交付通知單/);

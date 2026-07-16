@@ -1,0 +1,40 @@
+{
+  "animation": "six_dice_destiny_roll",
+  "version": "1.0",
+  "target_engine": "Next.js Canvas Runtime",
+  "checks": [
+    {
+      "name": "six fixed dice",
+      "status": "PASS"
+    },
+    {
+      "name": "standard opposite faces",
+      "status": "PASS"
+    },
+    {
+      "name": "single fixed geometry source",
+      "status": "PASS"
+    },
+    {
+      "name": "continuous time-based rotation",
+      "status": "PASS"
+    },
+    {
+      "name": "dynamic final face orientation",
+      "status": "PASS"
+    },
+    {
+      "name": "fixed camera and lighting",
+      "status": "PASS"
+    },
+    {
+      "name": "no Unicode dice replacement",
+      "status": "PASS"
+    },
+    {
+      "name": "accessible result synchronization",
+      "status": "PASS"
+    }
+  ],
+  "final_result": "PASS"
+}

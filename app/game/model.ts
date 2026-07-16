@@ -30,7 +30,7 @@ export type DebtEntry = {
 export type Pickup = {
   x: number;
   y: number;
-  type: "租券" | "藥品" | "鑰匙" | "裝備";
+  type: "租券" | "藥品" | "鑰匙" | "裝備" | "特殊權限卡";
   taken: boolean;
 };
 
@@ -38,6 +38,7 @@ export type StorageKind = "rent" | "medkits" | "keys";
 
 export type StorageStack = {
   id: number;
+  slot: number;
   kind: StorageKind;
   quantity: number;
 };
