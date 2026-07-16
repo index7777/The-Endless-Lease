@@ -200,12 +200,12 @@ export default function Game() {
     const gain = context.createGain();
     const now = context.currentTime;
     const settings = {
-      dice: [190, 90, 0.12], attack: [150, 42, 0.18], pickup: [420, 680, 0.16], hurt: [75, 38, 0.2], rent: [52, 31, 0.35], drink: [240, 110, .35],
+      dice: [190, 90, 0.12], attack: [150, 42, 0.18], pickup: [420, 680, 0.16], hurt: [75, 38, 0.2], rent: [52, 31, 0.35],
     }[kind];
-    oscillator.type = kind === "pickup" || kind === "drink" ? "sine" : "triangle";
+    oscillator.type = kind === "pickup" ? "sine" : "triangle";
     oscillator.frequency.setValueAtTime(settings[0], now);
     oscillator.frequency.exponentialRampToValueAtTime(settings[1], now + settings[2]);
-    gain.gain.setValueAtTime(kind === "attack" ? .22 : kind === "drink" ? .16 : kind === "rent" ? 0.12 : 0.1, now);
+    gain.gain.setValueAtTime(kind === "attack" ? .22 : kind === "rent" ? 0.12 : 0.1, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + settings[2]);
     oscillator.connect(gain); gain.connect(context.destination);
     oscillator.start(now); oscillator.stop(now + settings[2]);
