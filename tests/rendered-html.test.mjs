@@ -45,6 +45,7 @@ test("ships the demo scene and character assets", async () => {
   assert.match(model, /gender:\s*"male"\s*\|\s*"female"/);
   assert.match(game, /destiny\.gender === "female"/);
   assert.match(game, /setFilingStage\("ready"\); dispatchFlow\(\{ type: "RESTART" \}\)/);
+  assert.match(globals, /\.elevator-console\s*\{[^}]*pointer-events\s*:\s*auto|\.settlement-paper[^}]*\.elevator-console\s*\{\s*pointer-events\s*:\s*auto/);
   assert.doesNotMatch(game, /NT\$/);
   assert.doesNotMatch(game, /_sites-preview|SkeletonPreview/);
 });

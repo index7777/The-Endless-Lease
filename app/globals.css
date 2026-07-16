@@ -35,7 +35,7 @@ button { font:inherit; color:inherit; }
 .settlement-screen,.room-event-screen,.floor-select-screen{pointer-events:none;backdrop-filter:blur(3px)}
 .settlement-screen{background:radial-gradient(circle,rgba(91,30,27,.25),rgba(4,5,5,.82))}
 .room-event-screen,.floor-select-screen{background:rgba(4,6,5,.76)}
-.settlement-paper,.room-event-card,.elevator-panel{pointer-events:auto}
+.settlement-paper,.room-event-card,.elevator-panel,.elevator-console{pointer-events:auto}
 .vitals label{position:relative}
 .vitals label:after{grid-column:2;grid-row:1;margin:0;align-self:center;box-sizing:border-box;width:100%}
 .vitals i{grid-column:2;grid-row:1;align-self:center;box-sizing:border-box;max-width:calc(100% - 2px);margin-left:1px}
