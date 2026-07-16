@@ -1,22 +1,32 @@
 # 《無期租寓》專案接手指引
 
-本專案的絕對工作路徑：
+本專案目前唯一有效的絕對工作路徑：
 
-`C:\The Endless Lease`
+`C:\Users\Yinchia_Pan\Documents\Codex\The-Endless-Lease`
 
 任何新的 Codex 任務或開發者開始修改前，必須依序完整閱讀：
 
-1. `C:\The Endless Lease\outputs\無期租寓_開發交接文件.md`
-2. `C:\The Endless Lease\outputs\無期租寓_系統待補清單_v0.2.md`
-3. `C:\The Endless Lease\app\game.tsx`
-4. `C:\The Endless Lease\app\globals.css`
+1. 根目錄 `無期租寓_開發總交接文件_v2.0.md`
+2. 根目錄 `無期租寓_待辦追蹤_v1.0.md`
+3. `app/game.tsx`
+4. `app/globals.css`
+5. `.openai/hosting.json`
 
-不可只依賴舊對話摘要。以交接文件、目前檔案內容與使用者最新要求為準。
+不可只依賴舊對話摘要。以交接文件、目前檔案內容與使用者最新要求為準；不要重做交接文件標記為已完成的項目。
 
-重要約束：
+## 目前帳號與 Sites 的必要差異
+
+- 目前 Codex／Sites 帳號與原部署站點的帳號不同。
+- `.openai/hosting.json` 內的 `appgprj_6a57ba9393ec8191bdc222f31c279f27` 是舊帳號站點識別碼，目前帳號不可沿用。
+- 使用者已在 2026-07-16 明確要求：**建立目前帳號可存取的新 Sites 站點，才能進行測試。** 這項最新指示取代舊版「不可建立新 Sites」規則。
+- 截至本交接更新時，**新站點尚未建立，也尚未部署**。下一個任務應先建立新站點，再把新 `project_id` 寫回 `.openai/hosting.json`。
+- 建站後須以 `npm test` 驗證，將對應來源版本發布到新站點，等待部署成功，再把測試網址交給使用者。
+- 不得把發布憑證、權杖或其他秘密寫入檔案、Git remote 或提交紀錄。
+
+## 重要約束
 
 - 所有遊戲文字與生成圖像使用繁體中文。
 - 維持 1990–2005 亞洲老舊商住公寓、35mm 膠片寫實微恐怖風格。
-- 不可建立新的 Sites 站點；必須重用 `.openai/hosting.json` 既有專案。
-- 修改後執行交接文件中的回歸測試清單。
-- 不得把發布憑證、權杖或其他秘密寫入檔案。
+- 專案含 `.openai/hosting.json`；建置與部署必須依 Sites building／hosting 指引執行。
+- 修改後執行交接文件中的回歸測試清單；目前專案的完整自動驗證指令為 `npm test`。
+- 保留使用者既有修改，不得以重置、覆寫或重建方式回退已完成內容。
