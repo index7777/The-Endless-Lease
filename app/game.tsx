@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useReducer, useRef, useState } from "react";
-import { DEFECT_DESCRIPTIONS, DEMO_OPENING, DEMO_ROOMS, IDENTITY_LORE, MANAGEMENT_COPY, TALENT_DESCRIPTIONS } from "./game/demo-content";
+import { DEFECT_DESCRIPTIONS, DEMO_OPENING, DEMO_ROOMS, HONG_YI_LINES, IDENTITY_LORE, MANAGEMENT_COPY, TALENT_DESCRIPTIONS } from "./game/demo-content";
 import { gameFlowReducer, INITIAL_GAME_FLOW } from "./game/flow-state";
 import type { DebtEntry, Destiny, Enemy, FloorState, Location, Pickup, StorageKind, StorageStack } from "./game/model";
 
 const ATTRIBUTE_NAMES = ["體魄", "反應", "意志", "感知", "交涉", "異常親和"];
+const DIE_FACE_GLYPHS = ["", "⚀", "⚁", "⚂", "⚃", "⚄", "⚅"];
 const IDENTITIES = ["清潔工", "醫師", "逃犯", "房仲", "靈媒", "前住戶"];
 const TALENTS = ["租緩", "窺層", "偽居", "契語", "蝕耐"] as const;
 const DEFECTS = ["貪息", "幻聽", "無家", "輕厄", "直白", "寡眠"] as const;
@@ -143,7 +144,9 @@ export default function Game() {
   const complete = flow.screen === "complete";
   const destinyOpen = flow.screen === "destiny";
   const [destiny, setDestiny] = useState<Destiny>(() => ({ ...INITIAL_DESTINY, attributes: [...INITIAL_DESTINY.attributes] }));
-  const [filingStage, setFilingStage] = useState<"ready" | "rolling" | "attributes" | "result" | "complete">("ready");
+  const [filingStage, setFilingStage] = useState<"ready" | "rolling" | "attributes" | "briefing" | "result" | "complete">("ready");
+  const [selectedFilingAttribute, setSelectedFilingAttribute] = useState<number | null>(null);
+  const [residentName, setResidentName] = useState("");
   const paused = flow.paused;
   const settlement = flow.overlay.kind === "settlement";
   const [settlementCountdown, setSettlementCountdown] = useState(8);
@@ -596,6 +599,7 @@ export default function Game() {
 
   const beginFiling = useCallback(() => {
     if (filingStage === "rolling") return;
+    setSelectedFilingAttribute(null);
     setFilingStage("rolling"); sound("dice");
     window.setTimeout(() => sound("dice"), 420);
     window.setTimeout(() => sound("dice"), 860);
@@ -607,13 +611,22 @@ export default function Game() {
   }, [filingStage, sound]);
 
   const confirmIdentity = useCallback(() => {
-    setFilingStage("result"); sound("rent");
-  }, [sound]);
+    setFilingStage("briefing"); sound("rent");
+    if (!muted && typeof window !== "undefined" && "speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(HONG_YI_LINES.registrationComplete);
+      utterance.lang = "zh-TW"; utterance.rate = .84; utterance.pitch = .92; utterance.volume = .82;
+      const voices = window.speechSynthesis.getVoices();
+      const voice = voices.find(item => item.lang.toLowerCase().startsWith("zh-tw")) ?? voices.find(item => item.lang.toLowerCase().startsWith("zh"));
+      if (voice) utterance.voice = voice;
+      window.speechSynthesis.speak(utterance);
+    }
+    window.setTimeout(() => setFilingStage(stage => stage === "briefing" ? "result" : stage), 5200);
+  }, [muted, sound]);
 
   const finishFiling = useCallback(() => {
     setFilingStage("complete"); sound("rent");
-    window.setTimeout(() => reset(), 6200);
-  }, [reset, sound]);
+  }, [sound]);
 
   const attack = useCallback(() => {
     const p = game.current.player;
@@ -1112,25 +1125,27 @@ export default function Game() {
       </div>
       {paused && !logOpen && <section className="pause-menu"><div><small>無期租寓管理室</small><h2>暫停</h2><button onClick={() => dispatchFlow({type:"TOGGLE_PAUSE"})}>繼續遊戲</button><button onClick={() => setLogOpen(true)}>住戶紀錄</button><button onClick={() => setMuted(value => !value)}>{muted ? "開啟聲音" : "靜音"}</button><p>快捷鍵　WASD 移動　Shift 奔跑　Space 攻擊　E 互動　Q 天賦</p></div></section>}
       {logOpen && <section className="resident-log"><div><header><small>住戶個人文件</small><h2>住戶執行紀錄</h2><button onClick={() => setLogOpen(false)}>關閉</button></header><p>此處只記錄本輪住戶的行動與結果，不屬於管理室公告。</p><ol>{residentLog.length ? residentLog.map((entry,index)=><li key={`${entry}-${index}`}>{entry}</li>) : <li>本輪尚無執行紀錄。</li>}</ol></div></section>}
-      {flow.screen === "title" && <div className="start-screen"><div className="start-copy"><p>無期租寓管理室</p><h1>無期租寓</h1><blockquote className="title-slogan"><span>付得起租金，活得像人</span><span>付不起租金，歸於樓宇</span></blockquote><button onClick={() => { startAmbience(); sound("rent"); dispatchFlow({ type: "OPEN_INTRO" }); }}>入住登記</button><small className="current-lease"><b>目前租約</b><span>清除 B1、B2 異常</span><em>建議配戴耳機</em></small></div></div>}
-      {introOpen && <section className="intro-screen"><article className="intro-contract"><small>無期租寓管理室｜無期租約</small><h2>入寓抵債，萬事皆平</h2>{DEMO_OPENING.map(paragraph => <p key={paragraph}>{paragraph}</p>)}<blockquote>「記憶歸零，債務留存。命運重擲，租約無期。」</blockquote><div className="intro-gender"><span>本輪住戶性別</span><button className={destiny.gender === "male" ? "selected" : ""} onClick={() => setDestiny(value => ({...value, gender:"male"}))}>男性</button><button className={destiny.gender === "female" ? "selected" : ""} onClick={() => setDestiny(value => ({...value, gender:"female"}))}>女性</button></div><button onClick={() => { setFilingStage("ready"); dispatchFlow({ type: "OPEN_DESTINY" }); sound("rent"); }}>接受資格審查</button></article></section>}
+      {flow.screen === "title" && <div className="start-screen"><div className="start-copy"><p>入住通知單已送達</p><h1>無期租寓</h1><blockquote className="title-slogan"><span>每一次入住，都是一次命運抵押</span><span>記憶歸零，登記紀錄不會</span></blockquote><button onClick={() => { startAmbience(); sound("rent"); dispatchFlow({ type: "OPEN_INTRO" }); }}>開始入住登記</button><small className="current-lease"><b>入住規約</b><span>按日繳租，維持居住權</span><em>建議配戴耳機</em></small></div><aside className="title-office-sign"><b>租寓管理室</b><small>訪客請先登記</small></aside><div className="title-notice"><b>無期租寓通知單</b><span>入寓抵債，萬事皆平</span><small>管理室　啟</small></div></div>}
+      {introOpen && <section className="intro-screen"><article className="intro-contract"><small>租寓管理室｜入住通知單｜表單 01-A</small><h2>入寓抵債，萬事皆平</h2>{DEMO_OPENING.map(paragraph => <p key={paragraph}>{paragraph}</p>)}<blockquote>「記憶歸零，債務留存。命運重擲，租約無期。」</blockquote><label className="intro-name"><span>本輪住戶姓名</span><input value={residentName} maxLength={18} autoComplete="off" onChange={event => setResidentName(event.target.value)} placeholder="請填寫姓名"/><small>管理室將先以登記編號稱呼你</small></label><div className="intro-gender"><span>本輪住戶性別</span><button className={destiny.gender === "male" ? "selected" : ""} onClick={() => setDestiny(value => ({...value, gender:"male"}))}>男性</button><button className={destiny.gender === "female" ? "selected" : ""} onClick={() => setDestiny(value => ({...value, gender:"female"}))}>女性</button></div><button disabled={!residentName.trim()} onClick={() => { setFilingStage("ready"); dispatchFlow({ type: "OPEN_DESTINY" }); sound("rent"); }}>交付通知單</button><small className="intro-rules">入住規約｜提交後，管理室將依登記資料建立本輪檔案。</small></article></section>}
       {!started && destinyOpen && <section className="destiny-screen">
-        <div className="contract-head"><span>無期租寓管理室</span><small>輪迴入住登記表｜表單 17-B</small><h2>租約建檔</h2><p>公寓正在決定你的本輪身份</p></div>
-        {(filingStage === "ready" || filingStage === "rolling") && <div className="filing-die"><img className={filingStage === "rolling" ? "rolling" : ""} src="/fate-die-v1.png" alt="磨損的命運骰"/><button disabled={filingStage === "rolling"} onClick={beginFiling}>{filingStage === "rolling" ? "建檔中" : "開始建檔"}</button></div>}
-        {filingStage === "attributes" && <div className="dice-grid filing-values">
-          {ATTRIBUTE_NAMES.map((name, index) => <article key={name} className="die">
+        <nav className="filing-progress" aria-label="租約建檔進度"><span className={filingStage === "ready" || filingStage === "rolling" ? "active" : "done"}>骰子結果</span><i>›</i><span className={filingStage === "attributes" ? "active" : filingStage === "briefing" || filingStage === "result" || filingStage === "complete" ? "done" : ""}>選擇建檔</span><i>›</i><span className={filingStage === "briefing" || filingStage === "result" || filingStage === "complete" ? "active" : ""}>身份確認</span></nav>
+        <div className="contract-head"><span>無期租寓管理室</span><small>輪迴入住登記表｜表單 17-B</small><h2>租約建檔</h2><p>{filingStage === "complete" ? "建檔程序已完成。你的身份已被管理室正式存檔。" : filingStage === "result" ? "請確認本輪最終建檔內容；確認後資料不可撤回。" : filingStage === "attributes" ? "骰子已揭示可建檔項目，請選擇一項作為本輪建檔重點。" : "公寓正在決定你的本輪身份。"}</p><div className="dossier-rule"/><blockquote>{filingStage === "complete" ? "本輪居住權即刻生效。" : "在這裡，每一份檔案，都是你在這棟世界裡的存續證明。"}</blockquote><footer>◇ ROOM 17 ◇</footer></div>
+        {(filingStage === "ready" || filingStage === "rolling") && <div className="filing-die"><header><small>骰子結果</small><h3>命運裁定</h3><p>管理室將以六顆骰子裁定本輪能力；結果會影響後續可選建檔資料與居住條件。</p></header><div className={`six-dice-tray ${filingStage === "rolling" ? "rolling" : ""}`}>{ATTRIBUTE_NAMES.map((name,index)=><article key={name} className="roll-die" style={{animationDelay:`${index * .07}s`}}><span aria-label={`${name} ${destiny.attributes[index]} 點`}>{DIE_FACE_GLYPHS[destiny.attributes[index]]}</span><b>{name}</b><small>{destiny.attributes[index]} 點</small></article>)}</div><p className="roll-instruction">請擲出本輪六項建檔結果。</p><button disabled={filingStage === "rolling"} onClick={beginFiling}>{filingStage === "rolling" ? "裁定中…" : "擲出裁定"}<small>{filingStage === "rolling" ? "管理室正在記錄骰面" : "六顆骰子將同時裁定"}</small></button></div>}
+        {filingStage === "attributes" && <div className="filing-main"><header><h3>依骰子結果可建檔的項目</h3><span>{selectedFilingAttribute === null ? "請選擇一項進行建檔" : `已選擇：${ATTRIBUTE_NAMES[selectedFilingAttribute]}`}</span></header><div className="dice-grid filing-values">
+          {ATTRIBUTE_NAMES.map((name, index) => <button type="button" key={name} className={`die ${selectedFilingAttribute === index ? "selected" : ""}`} onClick={() => setSelectedFilingAttribute(index)}>
             <small>{name}</small><strong style={{animationDelay:`${index * .42}s`}}>{destiny.attributes[index]}</strong><i>管理室建檔</i>
-          </article>)}
-        </div>}
-        {filingStage === "result" && <div className="fate-details filing-result">
+          </button>)}
+        </div></div>}
+        {filingStage === "result" && <div className="filing-main"><header><h3>確認你的最終建檔內容</h3><span>請確認資訊後完成建檔</span></header><div className="fate-details filing-result">
           <article><small>身份背景</small><b>{destiny.identity}</b><p className="detail">{IDENTITY_LORE[destiny.identity]}（Demo 僅保留背景敘述，專屬能力尚未實裝。）</p></article>
           <article title={TALENT_DESCRIPTIONS[destiny.talent]}><small>天賦技能</small><b>{destiny.talent}</b><p className="detail">{TALENT_DESCRIPTIONS[destiny.talent]}</p></article>
           <article className="defect" title={DEFECT_DESCRIPTIONS[destiny.defect]}><small>缺陷／詛咒</small><b>{destiny.defect}</b><p className="detail">{DEFECT_DESCRIPTIONS[destiny.defect]}</p></article>
           <article><small>初始承租房</small><b>{roomNumber(destiny.floor, destiny.roomSlot)}</b><p className="detail">本輪從此房間出生；只有你與獲得授權的玩家可以正常進入。</p></article>
-        </div>}
-        {filingStage === "attributes" && <div className="contract-actions"><button className="reroll" onClick={beginFiling}>再骰一次</button><button className="accept" onClick={confirmIdentity}>身份確認</button></div>}
-        {filingStage === "result" && <div className="contract-actions"><button className="accept" onClick={finishFiling}>確認建檔結果</button></div>}
-        {filingStage === "complete" && <div className="filing-complete"><span>租約建檔完成。</span><span>居住權已生效。</span><span>無退租。</span><span>無到期。</span><span>無例外。</span></div>}
+        </div></div>}
+        {filingStage === "attributes" && <div className="contract-actions"><button className="reroll" onClick={beginFiling}>再骰一次<small>重新獲得結果</small></button><button className="accept" disabled={selectedFilingAttribute === null} onClick={confirmIdentity}>提交<small>交付本輪建檔選擇</small></button></div>}
+        {filingStage === "briefing" && <div className="hongyi-briefing" role="status" aria-live="polite"><small>租寓管理室｜紅怡</small><p>「{HONG_YI_LINES.registrationComplete}」</p><span>登記編號　17-B-{String(destiny.floor).padStart(2,"0")}{destiny.roomSlot}</span></div>}
+        {filingStage === "result" && <div className="contract-actions"><button className="reroll" onClick={() => setFilingStage("attributes")}>返回修改</button><button className="accept" onClick={finishFiling}>確認建檔結果<small>建立正式檔案</small></button></div>}
+        {filingStage === "complete" && <div className="filing-complete"><header><span>建檔完成</span><small>居住權已正式生效</small></header><article><small>{residentName}，租約建檔完成。<br/>居住權已生效。</small><strong>無退租。<br/>無到期。<br/><em>無例外。</em></strong><b>ROOM 17 — DOSSIER SEALED</b></article><div className="filing-summary"><span>住戶姓名<b>{residentName}</b></span><span>身份背景<b>{destiny.identity}</b></span><span>天賦技能<b>{destiny.talent}</b></span><span>缺陷／詛咒<b>{destiny.defect}</b></span><span>初始租房<b>{roomNumber(destiny.floor, destiny.roomSlot)}</b></span></div><button className="enter-lease" onClick={reset}>進入 {roomNumber(destiny.floor, destiny.roomSlot)}<small>開始本輪入住</small></button></div>}
       </section>}
       {started && settlement && <section className="settlement-screen">
         <div className="settlement-paper">
