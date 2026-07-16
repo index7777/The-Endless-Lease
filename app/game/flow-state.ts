@@ -15,11 +15,13 @@ export type GameFlowAction =
   | { type: "OPEN_INTRO" }
   | { type: "OPEN_DESTINY" }
   | { type: "START_RUN" }
+  | { type: "RESTORE_RUN" }
   | { type: "TOGGLE_PAUSE" }
   | { type: "OPEN_OVERLAY"; overlay: Exclude<GameOverlay, { kind: "none" }> }
   | { type: "CLOSE_OVERLAY"; kind?: GameOverlay["kind"] }
   | { type: "DIE" }
   | { type: "COMPLETE_DEMO" }
+  | { type: "RETURN_TITLE" }
   | { type: "RESTART" };
 
 export const INITIAL_GAME_FLOW: GameFlowState = {
@@ -36,6 +38,8 @@ export function gameFlowReducer(state: GameFlowState, action: GameFlowAction): G
       return state.screen === "intro" ? { screen: "destiny", paused: false, overlay: { kind: "none" } } : state;
     case "START_RUN":
       return state.screen === "destiny" ? { screen: "run", paused: false, overlay: { kind: "none" } } : state;
+    case "RESTORE_RUN":
+      return state.screen === "title" ? { screen: "run", paused: false, overlay: { kind: "none" } } : state;
     case "TOGGLE_PAUSE":
       return state.screen === "run" && state.overlay.kind === "none" ? { ...state, paused: !state.paused } : state;
     case "OPEN_OVERLAY":
@@ -50,6 +54,8 @@ export function gameFlowReducer(state: GameFlowState, action: GameFlowAction): G
       return state.screen === "run" ? { screen: "dead", paused: false, overlay: { kind: "none" } } : state;
     case "COMPLETE_DEMO":
       return state.screen === "run" ? { screen: "complete", paused: false, overlay: { kind: "none" } } : state;
+    case "RETURN_TITLE":
+      return state.screen === "complete" ? INITIAL_GAME_FLOW : state;
     case "RESTART":
       return state.screen === "dead" || state.screen === "complete" ? { screen: "destiny", paused: false, overlay: { kind: "none" } } : state;
   }

@@ -59,3 +59,38 @@ export type Destiny = {
   floor: number;
   roomSlot: number;
 };
+
+export type GameRuntime = {
+  player: { x: number; y: number; hp: number; stamina: number; facing: number; attack: number; invuln: number };
+  enemies: Enemy[];
+  pickups: Pickup[];
+  rent: number;
+  time: number;
+  score: number;
+  day: number;
+  rentDue: number;
+  settlementTriggered: boolean;
+  landlordTask: boolean;
+  taskKills: number;
+  debtMode: boolean;
+  arrears: number;
+  rentProtectionLost: boolean;
+  homeBreachTriggered: boolean;
+  breachTick: number;
+  floor: number;
+  attention: number;
+  visitedRooms: number[];
+  floorStates: Record<number, FloorState>;
+  weaponLevel: number;
+  medkits: number;
+  keysOwned: number;
+  skillCooldown: number;
+  camera: number;
+  dead: boolean;
+  debtLedger: DebtEntry[];
+  mortgageLayers: number;
+  defeatedBosses: string[];
+  activeBoss: null | "boss_b1" | "boss_b2";
+  phaseIndex: number;
+  phaseFlash: number;
+};

@@ -31,6 +31,12 @@ test("rejects out-of-order screen transitions", () => {
   assert.equal(gameFlowReducer(INITIAL_GAME_FLOW, { type: "OPEN_DESTINY" }), INITIAL_GAME_FLOW);
 });
 
+test("restores a saved run only from the title", () => {
+  const restored = gameFlowReducer(INITIAL_GAME_FLOW, { type: "RESTORE_RUN" });
+  assert.deepEqual(restored, { screen: "run", paused: false, overlay: { kind: "none" } });
+  assert.equal(gameFlowReducer(restored, { type: "RESTORE_RUN" }), restored);
+});
+
 test("keeps run overlays mutually exclusive and lets settlement take priority", () => {
   const run = reduce(INITIAL_GAME_FLOW, { type: "OPEN_INTRO" }, { type: "OPEN_DESTINY" }, { type: "START_RUN" });
   const storage = gameFlowReducer(run, { type: "OPEN_OVERLAY", overlay: { kind: "storage" } });
@@ -54,4 +60,6 @@ test("completes the demo only from a live run and can start a new resident", () 
   assert.deepEqual(gameFlowReducer(complete, { type: "RESTART" }), {
     screen: "destiny", paused: false, overlay: { kind: "none" },
   });
+  assert.deepEqual(gameFlowReducer(complete, { type: "RETURN_TITLE" }), INITIAL_GAME_FLOW);
+  assert.equal(gameFlowReducer(run, { type: "RETURN_TITLE" }), run);
 });

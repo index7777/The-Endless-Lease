@@ -65,6 +65,7 @@ button { font:inherit; color:inherit; }
 @keyframes slogan-second{0%,45.9%{opacity:0}59%,83.6%{opacity:1}100%{opacity:0}}
 @keyframes slogan-rule{0%,83.6%{opacity:1}100%{opacity:0}}
 .current-lease{display:grid!important;grid-template-columns:auto 1fr;gap:4px 12px;width:max-content;padding:10px 13px;border:1px solid #5e594b;background:#111410d9;color:#a9a18d!important}.current-lease b{color:#c7b997}.current-lease em{grid-column:2;font-style:normal;color:#7f897c}
+.title-actions{display:flex;align-items:stretch;gap:12px;flex-wrap:wrap}.title-actions>button{float:none;display:grid;place-items:center;min-width:210px}.title-actions>button small{margin:2px 0 0;color:#5f5545;font-size:9px;letter-spacing:.04em}.title-actions .continue-run{filter:brightness(1.06) drop-shadow(0 0 10px #b7965655) drop-shadow(3px 6px 5px #0009)}
 .topbar{inset:12px 14px auto;gap:12px}.topbar span{font-size:14px;color:#a9a18d}.topbar b{font-size:11px;margin-right:auto}.topbar button{margin-left:0;padding:6px 10px;font-size:11px}
 .rent-card{left:14px;top:52px;width:170px;padding:9px 11px;transform:none}.rent-card small{font-size:10px}.rent-card strong{font-size:19px}.rent-card b{margin-top:4px;font:700 15px Georgia,serif}.rent-card em{font-size:10px}
 .demo-goal{left:14px;top:158px;width:170px;display:grid;gap:3px;padding:8px 10px}.demo-goal small{font-size:9px}.demo-goal b{margin:0;color:#c4b795}.demo-goal em{font-size:10px;font-style:normal;color:#8e8878}

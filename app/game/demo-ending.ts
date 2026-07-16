@@ -19,6 +19,11 @@ export function advanceDemoEnding(current: DemoEndingState, next: DemoEndingStat
   return next;
 }
 
+export function canAccessDemoFloor(floor: number, boundFloor: number, endingState: DemoEndingState) {
+  if (floor === 6 && !["B2_ALIVE", "B2_DEFEATED", "KEYCARD_DROPPED"].includes(endingState)) return true;
+  return floor <= Math.min(9, boundFloor + 3);
+}
+
 export const DEMO_ENDING_ZH_TW = {
   "demo.b2.defeat.objective_pickup": "拾取異常物件",
   "demo.b2.clearance.header": "無期租寓管理室｜異常處理紀錄",

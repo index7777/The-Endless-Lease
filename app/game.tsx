@@ -6,10 +6,14 @@ import { gameFlowReducer, INITIAL_GAME_FLOW } from "./game/flow-state";
 import { ATTRIBUTE_NAMES, evaluateDestiny } from "./game/destiny-rules";
 import { DiceRollScene } from "./game/dice-model";
 import { isWalkable, probeGround, resolveSpawn } from "./game/scene-navigation";
-import { advanceDemoEnding, DEMO_ENDING_ZH_TW } from "./game/demo-ending";
+import { advanceDemoEnding, canAccessDemoFloor, DEMO_ENDING_ZH_TW } from "./game/demo-ending";
 import type { DemoEndingState } from "./game/demo-ending";
 import { getTimePeriod, sampleCharacterExposure, SCENE_PRESENTATION, TIME_PERIOD_PROFILES } from "./game/presentation-profiles";
-import type { DebtEntry, Destiny, Enemy, FloorState, Location, Pickup, StorageKind, StorageStack } from "./game/model";
+import { parseRunSave, RUN_SAVE_KEY, serializeRunSave } from "./game/run-save";
+import { TitleAmbientEngine } from "./game/title-ambient";
+import type { RunSaveV1 } from "./game/run-save";
+import type { DebtEntry, Destiny, Enemy, FloorState, GameRuntime, Location, Pickup, StorageKind, StorageStack } from "./game/model";
+import { getCharacterRenderHeightPx } from "./game/characterScale";
 
 const STARTING_FLOORS = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
@@ -99,7 +103,8 @@ export default function Game() {
   const touch = useRef({ x: 0, y: 0 });
   const audio = useRef<AudioContext | null>(null);
   const storageId = useRef(1);
-  const game = useRef({
+  const titleTransitionTimer = useRef<number | null>(null);
+  const game = useRef<GameRuntime>({
     player: { x: 150, y: 690, hp: 100, stamina: 100, facing: 1, attack: 0, invuln: 0 },
     enemies: [
       { x: 680, y: 330, hp: 45, phase: 0, location: "hallway" },
@@ -171,6 +176,9 @@ export default function Game() {
   const [hud, setHud] = useState({ hp: 100, stamina: 100, rent: 38, time: 720, score: 182, day: 1, rentDue: 50, debt: 0, mortgageLayers: 0, taskKills: 0, landlordTask: false, floor: 7, attention: 0, weaponLevel: 1, medkits: 1, keysOwned: 0, skillCooldown: 0, bossB1: false, bossB2: false });
   const ambience = useRef<HTMLAudioElement | null>(null);
   const music = useRef<HTMLAudioElement | null>(null);
+  const voiceAudio = useRef<HTMLAudioElement | null>(null);
+  const mutedRef = useRef(false);
+  const titleAmbient = useRef<TitleAmbientEngine | null>(null);
   const elevatorAudio = useRef<HTMLAudioElement | null>(null);
   const drinkAudio = useRef<HTMLAudioElement | null>(null);
   const [muted, setMuted] = useState(false);
@@ -181,6 +189,55 @@ export default function Game() {
   const [floor10NoticeOpen, setFloor10NoticeOpen] = useState(false);
   const [demoEndingOpen, setDemoEndingOpen] = useState(false);
   const [floor10Attempts, setFloor10Attempts] = useState(0);
+  const [availableSave, setAvailableSave] = useState<RunSaveV1 | null>(null);
+  const [titleTransitioning, setTitleTransitioning] = useState(false);
+  const cinematicOverlayOpen = clearanceReportOpen || managementDialogueStep !== null || floor10NoticeOpen || demoEndingOpen;
+
+  const playVoice = useCallback((number: number) => {
+    if (typeof window === "undefined" || mutedRef.current) return;
+    voiceAudio.current?.pause();
+    const audio = new Audio(`/audio/voice/hongyi/demo${String(number).padStart(2, "0")}.mp3`);
+    audio.volume = .88;
+    voiceAudio.current = audio;
+    void audio.play().catch(() => undefined);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const save = parseRunSave(window.localStorage.getItem(RUN_SAVE_KEY));
+    setAvailableSave(save);
+    if (!save && window.localStorage.getItem(RUN_SAVE_KEY)) window.localStorage.removeItem(RUN_SAVE_KEY);
+  }, []);
+
+  useEffect(() => {
+    if (flow.screen !== "title") return;
+    const engine = new TitleAmbientEngine();
+    titleAmbient.current = engine;
+    engine.setMuted(muted);
+    void engine.start();
+    const unlock = () => { void engine.start(); };
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+      if (titleAmbient.current === engine && flow.screen === "title") engine.stop();
+    };
+  }, [flow.screen]);
+
+  useEffect(() => {
+    mutedRef.current = muted;
+    titleAmbient.current?.setMuted(muted);
+    if (voiceAudio.current) voiceAudio.current.muted = muted;
+  }, [muted]);
+
+  useEffect(() => {
+    if (clearanceReportOpen) playVoice(2);
+  }, [clearanceReportOpen, playVoice]);
+
+  useEffect(() => {
+    if (managementDialogueStep !== null) playVoice(5 + managementDialogueStep);
+  }, [managementDialogueStep, playVoice]);
 
   const progressDemoEnding = useCallback((next: DemoEndingState) => {
     setDemoEndingState(current => {
@@ -193,6 +250,32 @@ export default function Game() {
     if (typeof window === "undefined" || demoEndingState === "B2_ALIVE") return;
     window.localStorage.setItem("endless-lease.demo-ending", JSON.stringify({ state: demoEndingState, day: hud.day, registration: `17-B-${String(destiny.floor).padStart(2,"0")}${destiny.roomSlot}` }));
   }, [demoEndingState, destiny.floor, destiny.roomSlot, hud.day]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (flow.screen === "dead" || flow.screen === "complete") {
+      window.localStorage.removeItem(RUN_SAVE_KEY);
+      setAvailableSave(null);
+      return;
+    }
+    if (flow.screen !== "run" || game.current.dead) return;
+    const persist = () => {
+      window.localStorage.setItem(RUN_SAVE_KEY, serializeRunSave({
+        residentName, destiny, location, activeRoom, demoEndingState,
+        storage, storageCapacity, mortgageMarks, residentLog, game: game.current,
+      }));
+    };
+    persist();
+    const interval = window.setInterval(persist, 3000);
+    const onVisibility = () => { if (document.visibilityState === "hidden") persist(); };
+    window.addEventListener("pagehide", persist);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("pagehide", persist);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [activeRoom, demoEndingState, destiny, flow.screen, location, mortgageMarks, residentLog, residentName, storage, storageCapacity]);
 
   useEffect(() => {
     if (!started || !message) return;
@@ -248,7 +331,7 @@ export default function Game() {
     }
   }, [muted]);
 
-  const startAmbience = useCallback(() => {
+  const startRunAmbience = useCallback(() => {
     if (!ambience.current) {
       ambience.current = new Audio("/audio/abandoned-passages-cc0.ogg");
       ambience.current.loop = true;
@@ -275,6 +358,9 @@ export default function Game() {
     music.current?.pause();
     elevatorAudio.current?.pause();
     drinkAudio.current?.pause();
+    voiceAudio.current?.pause();
+    titleAmbient.current?.stop();
+    if (titleTransitionTimer.current !== null) window.clearTimeout(titleTransitionTimer.current);
     void audio.current?.close();
   }, []);
 
@@ -342,8 +428,71 @@ export default function Game() {
     setFloor10Attempts(0);
     if (typeof window !== "undefined") window.localStorage.removeItem("endless-lease.demo-ending");
     dispatchFlow({ type: "START_RUN" });
-    startAmbience();
-  }, [destiny, startAmbience]);
+    startRunAmbience();
+    playVoice(0);
+  }, [destiny, playVoice, startRunAmbience]);
+
+  const restoreRun = useCallback(() => {
+    if (!availableSave) return;
+    const restored = parseRunSave(JSON.stringify(availableSave));
+    if (!restored) {
+      window.localStorage.removeItem(RUN_SAVE_KEY);
+      setAvailableSave(null);
+      return;
+    }
+    game.current = restored.game;
+    setResidentName(restored.residentName);
+    setDestiny(restored.destiny);
+    setLocation(restored.location);
+    setActiveRoom(restored.activeRoom);
+    setDemoEndingState(restored.demoEndingState);
+    setStorage(restored.storage);
+    setStorageCapacity(restored.storageCapacity);
+    storageId.current = Math.max(1, ...restored.storage.map(stack => stack.id + 1));
+    setMortgageMarks(restored.mortgageMarks);
+    setResidentLog(restored.residentLog);
+    setDebtStatus({ arrears: restored.game.arrears, protectionLost: restored.game.rentProtectionLost });
+    setElevatorTarget(null);
+    setClearanceReportOpen(false);
+    setManagementDialogueStep(null);
+    setFloor10NoticeOpen(false);
+    setDemoEndingOpen(false);
+    setLogOpen(false);
+    setHud({
+      hp: restored.game.player.hp, stamina: restored.game.player.stamina, rent: restored.game.rent,
+      time: restored.game.time, score: restored.game.score, day: restored.game.day, rentDue: restored.game.rentDue,
+      debt: debtTotal(restored.game.debtLedger), mortgageLayers: restored.game.mortgageLayers,
+      taskKills: restored.game.taskKills, landlordTask: restored.game.landlordTask, floor: restored.game.floor,
+      attention: restored.game.attention, weaponLevel: restored.game.weaponLevel, medkits: restored.game.medkits,
+      keysOwned: restored.game.keysOwned, skillCooldown: restored.game.skillCooldown,
+      bossB1: restored.game.defeatedBosses.includes("boss_b1"), bossB2: restored.game.defeatedBosses.includes("boss_b2"),
+    });
+    setMessage(`已恢復第 ${restored.game.day} 日住戶紀錄；未完成的彈窗已安全關閉`);
+    dispatchFlow({ type: "RESTORE_RUN" });
+    startRunAmbience();
+  }, [availableSave, startRunAmbience]);
+
+  const beginNewRegistration = useCallback(() => {
+    if (titleTransitioning) return;
+    setTitleTransitioning(true);
+    titleAmbient.current?.playPaperAndFade();
+    titleTransitionTimer.current = window.setTimeout(() => {
+      dispatchFlow({ type: "OPEN_INTRO" });
+      setTitleTransitioning(false);
+      titleTransitionTimer.current = null;
+    }, 1500);
+  }, [titleTransitioning]);
+
+  const continueSavedRun = useCallback(() => {
+    if (titleTransitioning) return;
+    setTitleTransitioning(true);
+    titleAmbient.current?.playPaperAndFade();
+    titleTransitionTimer.current = window.setTimeout(() => {
+      restoreRun();
+      setTitleTransitioning(false);
+      titleTransitionTimer.current = null;
+    }, 1500);
+  }, [restoreRun, titleTransitioning]);
 
   const spawnRentPursuers = useCallback((outstanding: number, targetLocation: Location, roomSlot?: number) => {
     const g = game.current;
@@ -524,6 +673,18 @@ export default function Game() {
     setHud({ hp: g.player.hp, stamina: g.player.stamina, rent: g.rent, time: g.time, score: g.score, day: g.day, rentDue: g.rentDue, debt: debtTotal(g.debtLedger), mortgageLayers: g.mortgageLayers, taskKills: g.taskKills, landlordTask: g.landlordTask, floor: g.floor, attention: g.attention, weaponLevel: g.weaponLevel, medkits: g.medkits, keysOwned: g.keysOwned, skillCooldown: g.skillCooldown, bossB1: g.defeatedBosses.includes("boss_b1"), bossB2: g.defeatedBosses.includes("boss_b2") });
   }, [sound]);
 
+  const leaveManagementOffice = useCallback(() => {
+    progressDemoEnding("POST_B2_FREE_ROAM");
+    setManagementDialogueStep(null);
+    travelToFloor(6);
+    const g = game.current;
+    g.player.x = 1450;
+    g.player.y = probeGround("hallway", 1450, WORLD_W, canvasRef.current?.clientHeight || 900).y;
+    g.camera = 900;
+    setHud(value => ({ ...value, floor: 6 }));
+    setMessage("返回 601。管理室允許你在封存紀錄前整理本輪物品。");
+  }, [progressDemoEnding, travelToFloor]);
+
   const enterBoss = useCallback((boss: "boss_b1" | "boss_b2") => {
     const g = game.current;
     if (boss === "boss_b2" && !g.defeatedBosses.includes("boss_b1")) {
@@ -644,18 +805,10 @@ export default function Game() {
   }, [filingStage, sound]);
 
   const confirmIdentity = useCallback(() => {
-    setFilingStage("briefing"); sound("rent");
-    if (!muted && typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(HONG_YI_LINES.registrationComplete);
-      utterance.lang = "zh-TW"; utterance.rate = .84; utterance.pitch = .92; utterance.volume = .82;
-      const voices = window.speechSynthesis.getVoices();
-      const voice = voices.find(item => item.lang.toLowerCase().startsWith("zh-tw")) ?? voices.find(item => item.lang.toLowerCase().startsWith("zh"));
-      if (voice) utterance.voice = voice;
-      window.speechSynthesis.speak(utterance);
-    }
+    setFilingStage("briefing");
+    playVoice(1);
     window.setTimeout(() => setFilingStage(stage => stage === "briefing" ? "result" : stage), 5200);
-  }, [muted, sound]);
+  }, [playVoice]);
 
   const finishFiling = useCallback(() => {
     setFilingStage("complete"); sound("rent");
@@ -784,6 +937,10 @@ export default function Game() {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      if (cinematicOverlayOpen) {
+        if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "shift", " "].includes(e.key.toLowerCase())) e.preventDefault();
+        return;
+      }
       if (dead) {
         if (["w", "a", "s", "d", "arrowup", "arrowdown", "arrowleft", "arrowright", "shift", " "].includes(e.key.toLowerCase())) e.preventDefault();
         return;
@@ -799,7 +956,7 @@ export default function Game() {
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
     return () => { window.removeEventListener("keydown", down); window.removeEventListener("keyup", up); };
-  }, [attack, dead, floorSelect, interact, roomEvent, storageOpen, useMedkit, useTalent]);
+  }, [attack, cinematicOverlayOpen, dead, floorSelect, interact, roomEvent, storageOpen, useMedkit, useTalent]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -864,8 +1021,8 @@ export default function Game() {
       const band = groundBand(h, location);
       const inputX = (keys.current.d || keys.current.arrowright ? 1 : 0) - (keys.current.a || keys.current.arrowleft ? 1 : 0) + touch.current.x;
       const inputY = (keys.current.s || keys.current.arrowdown ? 1 : 0) - (keys.current.w || keys.current.arrowup ? 1 : 0) + touch.current.y;
-      const isMoving = flow.screen === "run" && !paused && Math.hypot(inputX, inputY) > .1;
-      if (flow.screen === "run" && !paused && !g.dead) {
+      const isMoving = flow.screen === "run" && !paused && !cinematicOverlayOpen && Math.hypot(inputX, inputY) > .1;
+      if (flow.screen === "run" && !paused && !cinematicOverlayOpen && !g.dead) {
         const localWorldWidth = location === "hallway" ? WORLD_W : location === "elevator" ? ELEVATOR_W : ROOM_W;
         const dx = inputX;
         const dy = inputY;
@@ -1101,7 +1258,8 @@ export default function Game() {
         };
         const enemyImage = sceneImages[enemyKey as keyof typeof sceneImages];
         const enemyCrop = enemyCrops[enemyKey];
-        const spriteH = (isBoss ? 342 : e.elite ? 294 : 268) * enemyScale * SCENE_PRESENTATION[location].characterScale;
+        const enemyRole = isBoss ? "boss" : e.elite || e.kind === "pursuer" ? "rentPursuer" : "normalMonster";
+        const spriteH = getCharacterRenderHeightPx(enemyRole) * enemyScale * SCENE_PRESENTATION[location].characterScale;
         const spriteW = spriteH * (enemyCrop.w / enemyCrop.h);
         if (enemyImage.complete) ctx.drawImage(enemyImage, enemyCrop.x, enemyCrop.y, enemyCrop.w, enemyCrop.h, -spriteW / 2, -spriteH, spriteW, spriteH);
         ctx.restore();
@@ -1146,7 +1304,7 @@ export default function Game() {
         : pose === "walk"
           ? (female ? { x: 132, y: 102, w: 668, h: 1243 } : { x: 185, y: 102, w: 587, h: 1218 })
           : (female ? { x: 214, y: 97, w: 562, h: 1263 } : { x: 201, y: 79, w: 588, h: 1278 });
-      const spriteH = (pose === "death" ? 126 : 270) * depthScale * SCENE_PRESENTATION[location].characterScale;
+      const spriteH = (pose === "death" ? 126 : getCharacterRenderHeightPx("player")) * depthScale * SCENE_PRESENTATION[location].characterScale;
       const spriteW = spriteH * (crop.w / crop.h);
       const walkBob = isMoving && pose !== "attack" && pose !== "windup" ? Math.abs(Math.sin(now / 105)) * 1.8 : 0;
       if (p.attack > 0 && !g.dead) ctx.rotate(-Math.sin((1 - p.attack / .44) * Math.PI) * .035);
@@ -1162,7 +1320,7 @@ export default function Game() {
     };
     animationFrame = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(animationFrame); window.removeEventListener("resize", resize); };
-  }, [activeRoom, demoEndingState, flow.screen, paused, floorSelect, roomEvent, storageOpen, location, destiny.attributes, destiny.floor, destiny.roomSlot, destiny.gender, destiny.talent, destiny.defect, sound]);
+  }, [activeRoom, cinematicOverlayOpen, demoEndingState, flow.screen, paused, floorSelect, roomEvent, storageOpen, location, destiny.attributes, destiny.floor, destiny.roomSlot, destiny.gender, destiny.talent, destiny.defect, sound]);
 
   const joy = (x: number, y: number) => { touch.current = { x, y }; };
   const maxHp = 76 + destiny.attributes[0] * 5;
@@ -1203,7 +1361,7 @@ export default function Game() {
       </div>
       {paused && !logOpen && <section className="pause-menu"><div><small>無期租寓管理室</small><h2>暫停</h2><button onClick={() => dispatchFlow({type:"TOGGLE_PAUSE"})}>繼續遊戲</button><button onClick={() => setLogOpen(true)}>住戶紀錄</button><button onClick={() => setMuted(value => !value)}>{muted ? "開啟聲音" : "靜音"}</button><p>快捷鍵　WASD 移動　Shift 奔跑　Space 攻擊　E 互動　Q 天賦</p></div></section>}
       {logOpen && <section className="resident-log"><div><header><small>住戶個人文件</small><h2>住戶執行紀錄</h2><button onClick={() => setLogOpen(false)}>關閉</button></header><p>此處只記錄本輪住戶的行動與結果，不屬於管理室公告。</p><ol>{residentLog.length ? residentLog.map((entry,index)=><li key={`${entry}-${index}`}>{entry}</li>) : <li>本輪尚無執行紀錄。</li>}</ol></div></section>}
-      {flow.screen === "title" && <div className="start-screen"><div className="start-copy"><p>無期租寓管理室</p><h1><img src="/logo-title-v1.png" alt="無期租寓"/></h1><blockquote className="title-slogan"><span>付得起租金，活得像人</span><span>付不起租金，歸於樓宇</span></blockquote><button className="asset-button" onClick={() => { startAmbience(); sound("rent"); dispatchFlow({ type: "OPEN_INTRO" }); }}>開始入住登記</button><small className="current-lease"><b>入住規約</b><span>按日繳租，維持居住權</span><em>建議配戴耳機</em></small></div><aside className="title-office-sign"><b>租寓管理室</b><small>訪客請先登記</small></aside><div className="title-notice"><b>通知單已送達</b><span>請至管理室完成登記</span><small>管理室　啟</small></div></div>}
+      {flow.screen === "title" && <div className={`start-screen ${titleTransitioning ? "is-leaving" : ""}`}><div className="start-copy"><p>無期租寓管理室</p><h1><img src="/logo-title-v1.png" alt="無期租寓"/></h1><blockquote className="title-slogan"><span>付得起租金，活得像人</span><span>付不起租金，歸於樓宇</span></blockquote><div className="title-actions">{availableSave && <button disabled={titleTransitioning} className="asset-button continue-run" onClick={continueSavedRun}>繼續入住<small>第 {availableSave.game.day} 日｜{availableSave.game.floor > 0 ? `${availableSave.game.floor}F` : availableSave.game.floor === 0 ? "B1" : "B2"}｜{availableSave.residentName || "未具名住戶"}</small></button>}<button disabled={titleTransitioning} className="asset-button" onClick={beginNewRegistration}>{titleTransitioning ? "管理室正在翻開租約…" : availableSave ? "建立新住戶" : "開始入住登記"}</button></div><small className="current-lease"><b>入住規約</b><span>按日繳租，維持居住權</span><em>{availableSave ? "偵測到未完成的本輪紀錄" : "建議配戴耳機"}</em></small></div><aside className="title-office-sign"><b>租寓管理室</b><small>訪客請先登記</small></aside><div className="title-notice"><b>通知單已送達</b><span>請至管理室完成登記</span><small>管理室　啟</small></div></div>}
       {introOpen && <section className="intro-screen"><article className="intro-contract"><small>租寓管理室｜入住通知單｜表單 01-A</small><h2>入寓抵債，萬事皆平</h2>{DEMO_OPENING.map(paragraph => <p key={paragraph}>{paragraph}</p>)}<blockquote>「記憶歸零，債務留存。命運重擲，租約無期。」</blockquote><label className="intro-name"><span>本輪住戶姓名</span><input value={residentName} maxLength={18} autoComplete="off" onChange={event => setResidentName(event.target.value)} placeholder="請填寫姓名"/><small>管理室將先以登記編號稱呼你</small></label><div className="intro-gender"><span>本輪住戶性別</span><button className={destiny.gender === "male" ? "selected" : ""} onClick={() => setDestiny(value => ({...value, gender:"male"}))}>男性</button><button className={destiny.gender === "female" ? "selected" : ""} onClick={() => setDestiny(value => ({...value, gender:"female"}))}>女性</button></div><button disabled={!residentName.trim()} onClick={() => { setFilingStage("ready"); dispatchFlow({ type: "OPEN_DESTINY" }); sound("rent"); }}>交付通知單</button><small className="intro-rules">入住規約｜提交後，管理室將依登記資料建立本輪檔案。</small></article></section>}
       {!started && destinyOpen && <section className="destiny-screen">
         <nav className="filing-progress" aria-label="租約建檔進度"><span className={filingStage === "ready" || filingStage === "rolling" ? "active" : "done"}>骰子結果</span><i>›</i><span className={filingStage === "attributes" ? "active" : filingStage === "briefing" || filingStage === "result" || filingStage === "complete" ? "done" : ""}>選擇建檔</span><i>›</i><span className={filingStage === "briefing" || filingStage === "result" || filingStage === "complete" ? "active" : ""}>身份確認</span></nav>
@@ -1247,8 +1405,8 @@ export default function Game() {
         <header><small>老式電梯控制盤</small><h2>請選擇目的樓層</h2><p>租金依承租樓層結算<br/>向下探索時，收益依樓層差衰減</p></header>
         <div className="floor-indicator"><small>樓層顯示</small><strong>{elevatorTarget ?? (game.current.activeBoss === "boss_b1" ? "B1" : game.current.activeBoss === "boss_b2" ? "B2" : hud.floor)}</strong><span>{elevatorTarget ? "運行中" : "待機"}</span></div>
         <div className="floor-buttons">
-          {STARTING_FLOORS.map(floor => { const maxAccess = Math.min(9, destiny.floor + 3); const locked = floor > maxAccess; const current = !game.current.activeBoss && floor === hud.floor; const leased = floor === destiny.floor; const subtitle = floor === 1 ? "資源收益較低" : floor === 2 ? leased ? `承租房 ${roomNumber(destiny.floor,destiny.roomSlot)}` : "低風險探索" : floor === 3 ? "異常強度較低" : floor === 4 ? "事件收益提升" : floor === 5 ? "異常強度提升" : `最高通行權限 ${maxAccess}F`; return <button key={floor} disabled={locked || current || Boolean(elevatorTarget)} className={`${locked ? "locked" : ""} ${current ? "current" : ""} ${leased ? "leased" : ""} ${elevatorTarget === `${floor}F` ? "pressed" : ""}`} onClick={() => beginElevatorTravel(floor)}><strong>{floor}F</strong>{leased && <i>承租</i>}<b>{locked ? "租約權限不足" : current ? "目前所在" : leased ? "承租樓層" : floor <= 3 ? "安全避難層" : "博弈收益層"}</b><span>{subtitle}</span></button>; })}
-          {demoEndingState !== "B2_ALIVE" && <button className="floor10-pending" disabled={Boolean(elevatorTarget) || ["KEYCARD_DELIVERED","POST_B2_FREE_ROAM","FLOOR10_NOTICE_DISCOVERED","DEMO_ENDING_STARTED","DEMO_COMPLETED"].includes(demoEndingState)} onClick={() => { setFloor10Attempts(value => value + 1); if (demoEndingState === "CLEARANCE_REPORT_VIEWED") progressDemoEnding("FLOOR10_BUTTON_DISCOVERED"); setMessage(floor10Attempts === 0 ? DEMO_ENDING_ZH_TW["demo.elevator.floor10.first_interaction"] : DEMO_ENDING_ZH_TW["demo.elevator.floor10.repeat_interaction"]); sound("rent"); }}><strong>10F</strong><b>等待管理員核准</b><span>按鍵發出異常白光</span></button>}
+          {STARTING_FLOORS.map(floor => { const maxAccess = Math.min(9, destiny.floor + 3); const locked = !canAccessDemoFloor(floor, destiny.floor, demoEndingState); const current = !game.current.activeBoss && floor === hud.floor; const leased = floor === destiny.floor; const subtitle = floor === 6 && !locked && floor > maxAccess ? "特殊權限卡已開放管理室" : floor === 1 ? "資源收益較低" : floor === 2 ? leased ? `承租房 ${roomNumber(destiny.floor,destiny.roomSlot)}` : "低風險探索" : floor === 3 ? "異常強度較低" : floor === 4 ? "事件收益提升" : floor === 5 ? "異常強度提升" : `最高通行權限 ${maxAccess}F`; return <button key={floor} disabled={locked || current || Boolean(elevatorTarget)} className={`${locked ? "locked" : ""} ${current ? "current" : ""} ${leased ? "leased" : ""} ${elevatorTarget === `${floor}F` ? "pressed" : ""}`} onClick={() => beginElevatorTravel(floor)}><strong>{floor}F</strong>{leased && <i>承租</i>}<b>{locked ? "租約權限不足" : current ? "目前所在" : leased ? "承租樓層" : floor === 6 && floor > maxAccess ? "管理室特別通行" : floor <= 3 ? "安全避難層" : "博弈收益層"}</b><span>{subtitle}</span></button>; })}
+          {demoEndingState !== "B2_ALIVE" && <button className="floor10-pending" disabled={Boolean(elevatorTarget) || ["KEYCARD_DELIVERED","POST_B2_FREE_ROAM","FLOOR10_NOTICE_DISCOVERED","DEMO_ENDING_STARTED","DEMO_COMPLETED"].includes(demoEndingState)} onClick={() => { const firstAttempt = floor10Attempts === 0; setFloor10Attempts(value => value + 1); if (demoEndingState === "CLEARANCE_REPORT_VIEWED") progressDemoEnding("FLOOR10_BUTTON_DISCOVERED"); setMessage(firstAttempt ? DEMO_ENDING_ZH_TW["demo.elevator.floor10.first_interaction"] : DEMO_ENDING_ZH_TW["demo.elevator.floor10.repeat_interaction"]); playVoice(firstAttempt ? 3 : 4); }}><strong>10F</strong><b>等待管理員核准</b><span>按鍵發出異常白光</span></button>}
           <button className={`boss-floor ${elevatorTarget === "B1" ? "pressed" : ""}`} disabled={hud.bossB1 || Boolean(elevatorTarget)} onClick={() => beginElevatorTravel("boss_b1")}><strong>B1</strong><b>{hud.bossB1 ? "今日已清除" : "底層異常源"}</b><span>目前主線目標</span></button>
           <button className={`boss-floor ${!hud.bossB1 ? "locked" : ""} ${elevatorTarget === "B2" ? "pressed" : ""}`} disabled={!hud.bossB1 || hud.bossB2 || Boolean(elevatorTarget)} onClick={() => beginElevatorTravel("boss_b2")}><strong>B2</strong><b>{hud.bossB2 ? "今日已清除" : hud.bossB1 ? "底層核心區" : "租約尚未允許"}</b><span>{hud.bossB1 ? "最終目標" : "須先清除 B1"}</span></button>
         </div>
@@ -1256,9 +1414,9 @@ export default function Game() {
         {elevatorTarget && <div className="elevator-doors" aria-hidden="true"><i/><i/></div>}
       </div></section>}
       {started && clearanceReportOpen && <section className="clearance-report-screen"><article className="clearance-report"><header><small>{DEMO_ENDING_ZH_TW["demo.b2.clearance.header"]}</small><b>清剿紀錄：B2-{String(hud.day).padStart(2,"0")}-{String(destiny.roomSlot).padStart(2,"0")}</b></header><h2>{DEMO_ENDING_ZH_TW["demo.b2.clearance.title"]}</h2><h3>{DEMO_ENDING_ZH_TW["demo.b2.clearance.subtitle"]}</h3><p>{DEMO_ENDING_ZH_TW["demo.b2.clearance.body"]}</p><div className="clearance-status">{(["status_b1","status_b2","status_power","status_elevator","status_floor10"] as const).map((key,index)=><span key={key} style={{animationDelay:`${.2 + index * .18}s`}}>{DEMO_ENDING_ZH_TW[`demo.b2.clearance.${key}`]}<i>{key === "status_floor10" ? "待核准" : key === "status_power" ? "已登記" : key === "status_b1" ? "已封鎖" : "已清除"}</i></span>)}</div><blockquote>「{DEMO_ENDING_ZH_TW["demo.b2.clearance.hongyi_message"]}」<small>——管理員・紅怡</small></blockquote><footer><button onClick={() => { progressDemoEnding("CLEARANCE_REPORT_VIEWED"); setClearanceReportOpen(false); setMessage(DEMO_ENDING_ZH_TW["demo.return_office.description"]); }}>查看戰場</button><button className="asset-button" onClick={() => { progressDemoEnding("CLEARANCE_REPORT_VIEWED"); setClearanceReportOpen(false); setMessage(DEMO_ENDING_ZH_TW["demo.return_office.description"]); }}>返回管理室<small>將特殊權限卡交給紅怡</small></button></footer></article></section>}
-      {started && managementDialogueStep !== null && <section className="hongyi-office-dialogue"><article><header><small>六樓｜租寓管理室</small><b>管理員・紅怡</b></header><p>「{[DEMO_ENDING_ZH_TW["demo.hongyi.keycard.intro"],DEMO_ENDING_ZH_TW["demo.hongyi.keycard.floor10"],DEMO_ENDING_ZH_TW["demo.hongyi.keycard.registration"],DEMO_ENDING_ZH_TW["demo.hongyi.keycard.conclusion"]][managementDialogueStep]}」</p><footer><span>特殊權限卡・10F</span><button className="asset-button" onClick={() => { if (managementDialogueStep < 2) { setManagementDialogueStep(managementDialogueStep + 1); return; } if (managementDialogueStep === 2) { progressDemoEnding("KEYCARD_DELIVERED"); setManagementDialogueStep(3); setMessage("特殊權限卡已由管理室登記；10F 仍待核准"); return; } progressDemoEnding("POST_B2_FREE_ROAM"); setManagementDialogueStep(null); setLocation("hallway"); setActiveRoom(null); game.current.floor = 6; game.current.activeBoss = null; game.current.player.x = 1450; game.current.player.y = probeGround("hallway",1450,WORLD_W,canvasRef.current?.clientHeight||900).y; game.current.camera = 900; setHud(value => ({...value,floor:6})); setMessage("返回 601。管理室允許你在封存紀錄前整理本輪物品。"); }}>{managementDialogueStep === 2 ? "交付並登記" : managementDialogueStep === 3 ? "離開管理室" : "繼續"}</button></footer></article></section>}
+      {started && managementDialogueStep !== null && <section className="hongyi-office-dialogue"><article><header><small>六樓｜租寓管理室</small><b>管理員・紅怡</b></header><p>「{[DEMO_ENDING_ZH_TW["demo.hongyi.keycard.intro"],DEMO_ENDING_ZH_TW["demo.hongyi.keycard.floor10"],DEMO_ENDING_ZH_TW["demo.hongyi.keycard.registration"],DEMO_ENDING_ZH_TW["demo.hongyi.keycard.conclusion"]][managementDialogueStep]}」</p><footer><span>特殊權限卡・10F</span><button className="asset-button" onClick={() => { if (managementDialogueStep < 2) { setManagementDialogueStep(managementDialogueStep + 1); return; } if (managementDialogueStep === 2) { progressDemoEnding("KEYCARD_DELIVERED"); setManagementDialogueStep(3); setMessage("特殊權限卡已由管理室登記；10F 仍待核准"); return; } leaveManagementOffice(); }}>{managementDialogueStep === 2 ? "交付並登記" : managementDialogueStep === 3 ? "離開管理室" : "繼續"}</button></footer></article></section>}
       {started && floor10NoticeOpen && <section className="floor10-notice-screen"><article><small>{DEMO_ENDING_ZH_TW["demo.floor10.notice.header"]}</small><h2>{DEMO_ENDING_ZH_TW["demo.floor10.notice.title"]}</h2><p>{DEMO_ENDING_ZH_TW["demo.floor10.notice.body"]}</p><blockquote>{DEMO_ENDING_ZH_TW["demo.floor10.notice.inspect"]}</blockquote><button className="asset-button" onClick={() => { progressDemoEnding("DEMO_ENDING_STARTED"); setFloor10NoticeOpen(false); setDemoEndingOpen(true); }}>翻閱通知單</button></article></section>}
-      {started && demoEndingOpen && <section className="demo-ending-cinematic"><article><small>本輪紀錄｜已封存</small><h2>{DEMO_ENDING_ZH_TW["demo.ending.title"]}</h2><p>{DEMO_ENDING_ZH_TW["demo.ending.body"]}</p><strong>{DEMO_ENDING_ZH_TW["demo.ending.teaser"]}</strong><footer><button onClick={() => { setDemoEndingOpen(false); setLogOpen(true); }}>查看本輪紀錄</button><button className="asset-button" onClick={() => { progressDemoEnding("DEMO_COMPLETED"); setDemoEndingOpen(false); setFilingStage("ready"); dispatchFlow({type:"RESTART"}); }}>返回標題</button></footer></article></section>}
+      {started && demoEndingOpen && <section className="demo-ending-cinematic"><article><small>本輪紀錄｜已封存</small><h2>{DEMO_ENDING_ZH_TW["demo.ending.title"]}</h2><p>{DEMO_ENDING_ZH_TW["demo.ending.body"]}</p><strong>{DEMO_ENDING_ZH_TW["demo.ending.teaser"]}</strong><footer><button onClick={() => { setDemoEndingOpen(false); setLogOpen(true); }}>查看本輪紀錄</button><button className="asset-button" onClick={() => { progressDemoEnding("DEMO_COMPLETED"); setDemoEndingOpen(false); setFilingStage("ready"); window.localStorage.removeItem(RUN_SAVE_KEY); setAvailableSave(null); dispatchFlow({type:"COMPLETE_DEMO"}); dispatchFlow({type:"RETURN_TITLE"}); }}>返回標題</button></footer></article></section>}
       {dead && deathReady && <button className="death" onClick={() => { game.current.dead = false; setFilingStage("ready"); dispatchFlow({ type: "RESTART" }); setLocation("hallway"); setActiveRoom(null); setDestiny(createDestiny()); }}>你已融入公寓<br/><span>重新入住</span></button>}
       {complete && null}
     </main>

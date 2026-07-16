@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "referenceScale": {
+    "adultHeightCm": 180,
+    "adultRenderHeightPx": 256,
+    "doorHeightCm": 220,
+    "doorRenderHeightPx": 312,
+    "headClearanceCm": { "min": 15, "max": 25 },
+    "renderHeightTolerancePx": 4
+  },
+  "requiredStates": ["Idle", "Walk", "Run", "Attack", "Hit", "Die", "Interact", "Turn", "Sit", "OpenDoor", "CloseDoor"],
+  "minimumFrames": {
+    "Idle": 12,
+    "NpcIdle": 16,
+    "Walk": 16,
+    "Run": 20,
+    "Attack": 4,
+    "Hit": 4,
+    "Die": 8
+  },
+  "minimumMonsterFps": 24,
+  "maximumPivotDriftPx": 2,
+  "maximumGroundDriftPx": 2,
+  "maximumFrameHeightDeltaRatio": 0.04,
+  "maximumBrightnessDelta": 0.08,
+  "requiredAttackPhases": ["Prepare", "Swing", "Impact", "Recovery"],
+  "legacySpriteDirectory": "public",
+  "manifestDirectory": "assets/characters/manifests",
+  "reportDirectory": "assets/characters/reports"
+}

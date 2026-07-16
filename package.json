@@ -9,8 +9,12 @@
     "dev": "vinext dev",
     "build": "vinext build",
     "start": "vinext start",
-    "test": "npm run validate:dice && npm run build && node --test tests/*.test.mjs",
+    "test": "npm run validate:dice && npm run validate:animation:strict && npm run build && node --test tests/*.test.mjs",
     "validate:dice": "node tools/validate-dice-animation.mjs",
+    "validate:animation": "node tools/validate-character-animation.mjs",
+    "validate:animation:strict": "node tools/validate-character-animation.mjs --strict-candidates",
+    "task:check": "node scripts/validate-active-task.mjs",
+    "precommit:project": "npm run task:check && npm test",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"
   },

@@ -1,0 +1,18 @@
+.ui-design-root{color:var(--ui-paper);font-family:"Noto Serif TC","PMingLiU",serif}
+.ui-metal-frame{border:1px solid var(--ui-frame);border-radius:0;background:var(--ui-background);box-shadow:var(--ui-contact-shadow)}
+.ui-paper-panel,.ui-archive-card{border:1px solid var(--ui-frame);border-radius:0;background:var(--ui-paper);color:var(--ui-text);box-shadow:var(--ui-paper-shadow)}
+.ui-paper-panel{padding:clamp(20px,3vw,48px)}
+.ui-archive-card{padding:24px;min-block-size:180px}
+.ui-management-button{border:1px solid var(--ui-frame);border-radius:0;padding:12px 22px;background:var(--ui-background);color:var(--ui-paper);font:inherit;transition:filter 160ms ease;cursor:pointer}
+.ui-management-button:hover,.ui-management-button:focus-visible{filter:brightness(1.12)}
+.ui-management-button[data-variant="paper"]{background:var(--ui-paper);color:var(--ui-text)}
+.ui-progress-header,.ui-administrative-divider{display:flex;align-items:center;gap:16px;border-block-end:1px solid var(--ui-frame)}
+.ui-progress-header{padding-block:12px;font-size:var(--ui-font-caption)}
+.ui-lease-stamp{display:inline-grid;place-items:center;border:2px solid var(--ui-warning);border-radius:0;padding:8px;color:var(--ui-warning);transform:rotate(-5deg)}
+.ui-administrative-divider{min-height:1px;margin-block:20px}
+.ui-status-ledger{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px 24px}
+.ui-objective-note,.ui-dialog-notice{border-inline-start:2px solid var(--ui-warning);padding:12px 16px;background:var(--ui-paper);color:var(--ui-text)}
+.ui-layout-columns{display:grid;grid-template-columns:minmax(260px,.8fr) minmax(0,1.4fr);gap:clamp(24px,4vw,64px)}
+.ui-h1{font-size:var(--ui-font-h1);font-weight:500}.ui-h2{font-size:var(--ui-font-h2);font-weight:600}.ui-body{font-size:var(--ui-font-body)}.ui-caption{font-size:var(--ui-font-caption)}
+@media(max-width:760px){.ui-layout-columns{grid-template-columns:minmax(0,1fr)}}
+@media(prefers-reduced-motion:reduce){.ui-management-button{transition:none}}

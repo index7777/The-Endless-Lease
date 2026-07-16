@@ -1,0 +1,164 @@
+{
+  "validator": "The Endless Lease 2.5D Animation Validator",
+  "version": "1.0",
+  "generatedAt": "2026-07-16T14:21:34.285Z",
+  "finalResult": "Rejected",
+  "policy": "AI 圖片只可作為 Animation Source；正式候選必須通過全部檢查",
+  "characters": [],
+  "legacyAssets": [
+    {
+      "asset": "public/sprite-boss-b1-attack-v2.png",
+      "dimensions": "941×1672",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-boss-b1-v2.png",
+      "dimensions": "941×1672",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-boss-b2-attack-v2.png",
+      "dimensions": "1024×1536",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-boss-b2-v1.png",
+      "dimensions": "1024×1536",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-light-warden-v1.png",
+      "dimensions": "941×1672",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-attack-v1.png",
+      "dimensions": "1024×1536",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-attack-windup-v2.png",
+      "dimensions": "1024×1536",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-death-v1.png",
+      "dimensions": "1536×1024",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-female-attack-v1.png",
+      "dimensions": "1023×1537",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-female-attack-windup-v2.png",
+      "dimensions": "1536×1024",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-female-death-v1.png",
+      "dimensions": "1536×1024",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-female-v1.png",
+      "dimensions": "1024×1536",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-female-walk-transition-v2.png",
+      "dimensions": "1023×1537",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-female-walk-v1.png",
+      "dimensions": "1024×1536",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-v1.png",
+      "dimensions": "1024×1536",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-walk-transition-v2.png",
+      "dimensions": "1024×1536",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-player-walk-v1.png",
+      "dimensions": "1024×1536",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-receipt-collector-v1.png",
+      "dimensions": "1024×1536",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-rent-pursuer-attack-v2.png",
+      "dimensions": "984×1598",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-rent-pursuer-v1.png",
+      "dimensions": "985×1597",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-wall-resident-attack-v2.png",
+      "dimensions": "936×1680",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    },
+    {
+      "asset": "public/sprite-wall-resident-v1.png",
+      "dimensions": "941×1672",
+      "result": "Rejected",
+      "usage": "Prototype Only",
+      "reason": "未註冊角色動畫 Manifest；單張 AI 圖不是 Animation Clip"
+    }
+  ]
+}

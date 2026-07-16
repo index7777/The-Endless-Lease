@@ -46,11 +46,11 @@ test("ships the demo scene and character assets", async () => {
   assert.match(layout, /無期租寓/);
   assert.match(model, /gender:\s*"male"\s*\|\s*"female"/);
   assert.match(game, /destiny\.gender === "female"/);
-  assert.match(game, /<DiceModel/);
+  assert.match(game, /<DiceRollScene/);
   assert.ok(publicFiles.includes("logo-title-v1.png"));
   assert.ok(publicFiles.includes("ui-action-button-v1.png"));
   assert.ok(publicFiles.includes("scene-registration-form-v1.png"));
-  assert.match(game, /ATTRIBUTE_NAMES\.map\(\(name,index\)=>/);
+  assert.match(game, /ATTRIBUTE_NAMES\.map\(\(name,\s*index\)\s*=>/);
   assert.match(game, /本輪住戶姓名/);
   assert.match(game, /交付通知單/);
   assert.match(game, /擲出裁定/);
