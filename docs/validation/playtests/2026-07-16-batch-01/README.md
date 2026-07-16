@@ -23,4 +23,3 @@
 | `15-full-floor-spec-original.txt` | `3697f4c15a3078b8182d7599a18deea7b8b2ad40a451f0a71f65a1cb2803d1ed` |
 
 完整任務對應見：`tasks/feedback/2026-07-16-vercel-playtest-batch-01.md`。
-
