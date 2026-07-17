@@ -1,12 +1,19 @@
 import type { Location } from "./model";
 
-export type TimePeriod = "morning" | "day" | "evening" | "night" | "deep_night";
+export const GAME_DAY_SECONDS = 1800;
+export type TimePeriod = "daylight" | "evening" | "curfew_night" | "uncanny_dawn";
+export const TIME_PERIOD_ORDER: readonly TimePeriod[] = ["daylight", "evening", "curfew_night", "uncanny_dawn"];
+export const TIME_PERIOD_LABELS: Record<TimePeriod, string> = {
+  daylight: "白晝",
+  evening: "黃昏",
+  curfew_night: "宵禁深夜",
+  uncanny_dawn: "臨晨詭時",
+};
 export const TIME_PERIOD_PROFILES: Record<TimePeriod, { exposure: number; cold: number; practicalIntensity: number; outageChance: number }> = {
-  morning: { exposure: .94, cold: .08, practicalIntensity: .86, outageChance: 0 },
-  day: { exposure: 1, cold: .12, practicalIntensity: 1, outageChance: 0 },
-  evening: { exposure: .88, cold: -.08, practicalIntensity: .92, outageChance: .08 },
-  night: { exposure: .72, cold: .15, practicalIntensity: .78, outageChance: .18 },
-  deep_night: { exposure: .58, cold: .24, practicalIntensity: .61, outageChance: .34 },
+  daylight: { exposure: 1, cold: .05, practicalIntensity: 1, outageChance: 0 },
+  evening: { exposure: .84, cold: -.18, practicalIntensity: .9, outageChance: .08 },
+  curfew_night: { exposure: .64, cold: .22, practicalIntensity: .72, outageChance: .22 },
+  uncanny_dawn: { exposure: .48, cold: .38, practicalIntensity: .52, outageChance: .38 },
 };
 
 export const SCENE_PRESENTATION = {
@@ -22,12 +29,27 @@ export const UI_THEME = {
 } as const;
 
 export function getTimePeriod(secondsRemaining: number): TimePeriod {
-  const elapsed = 720 - secondsRemaining;
-  if (elapsed < 90) return "morning";
-  if (elapsed < 260) return "day";
-  if (elapsed < 410) return "evening";
-  if (elapsed < 590) return "night";
-  return "deep_night";
+  const elapsed = GAME_DAY_SECONDS - Math.max(0, Math.min(GAME_DAY_SECONDS, secondsRemaining));
+  if (elapsed < 600) return "daylight";
+  if (elapsed < 1050) return "evening";
+  if (elapsed < 1575) return "curfew_night";
+  return "uncanny_dawn";
+}
+
+export const getTimePeriodIndex = (secondsRemaining: number) => TIME_PERIOD_ORDER.indexOf(getTimePeriod(secondsRemaining));
+export const getTimePeriodLabel = (secondsRemaining: number) => TIME_PERIOD_LABELS[getTimePeriod(secondsRemaining)];
+
+export function isPatrolLightPeriod(secondsRemaining: number) {
+  const period = getTimePeriod(secondsRemaining);
+  return period === "curfew_night" || period === "uncanny_dawn";
+}
+
+export function isPatrolLightManifested(nowMs: number, phase: number, hp: number, secondsRemaining: number) {
+  if (hp <= 0) return true;
+  if (!isPatrolLightPeriod(secondsRemaining)) return false;
+  const outageChance = TIME_PERIOD_PROFILES[getTimePeriod(secondsRemaining)].outageChance;
+  const unstableLight = Math.sin(nowMs / 520 + phase * 2.7) + Math.sin(nowMs / 170 + phase * 5.3) * .55;
+  return unstableLight > -.55 + outageChance * 1.15;
 }
 
 export function sampleCharacterExposure(location: Location, normalizedX: number, secondsRemaining: number) {

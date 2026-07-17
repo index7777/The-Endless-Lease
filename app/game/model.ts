@@ -20,6 +20,7 @@ export type Enemy = {
   hitTimer?: number;
   deathTimer?: number;
   deathDuration?: number;
+  deathFacing?: -1 | 1;
   rewardGranted?: boolean;
 };
 
@@ -35,6 +36,7 @@ export type Pickup = {
   x: number;
   y: number;
   type: "租券" | "藥品" | "鑰匙" | "裝備" | "特殊權限卡";
+  amount?: number;
   taken: boolean;
 };
 

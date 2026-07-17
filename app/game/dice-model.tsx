@@ -105,7 +105,7 @@ export function DiceModel({ value, rolling, seed = 0, label }: { value: number; 
 export function DiceRollScene({ values, rolling }: { values: readonly number[]; rolling: boolean }) {
   return <div className={`dice-roll-scene ${rolling ? "is-rolling" : "is-settled"}`} role="img" aria-label={`命運裁定實體骰，六項結果 ${values.join("、")}`}>
     <div className="fate-ledger" aria-hidden="true"/>
-    <img className="fate-die" src="/fate-die-v1.png" alt="" aria-hidden="true"/>
+    <DiceModel value={values[0]} rolling={rolling} seed={values.reduce((sum, value) => sum + value, 0)} label="命運裁定骰" />
     <span className="fate-stamp" aria-hidden="true">無期</span>
   </div>;
 }

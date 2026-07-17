@@ -6,6 +6,8 @@
 .ui-management-button{border:1px solid var(--ui-frame);border-radius:0;padding:12px 22px;background:var(--ui-background);color:var(--ui-paper);font:inherit;transition:filter 160ms ease;cursor:pointer}
 .ui-management-button:hover,.ui-management-button:focus-visible{filter:brightness(1.12)}
 .ui-management-button[data-variant="paper"]{background:var(--ui-paper);color:var(--ui-text)}
+.ui-design-root .ui-management-button{border:1px solid var(--ui-frame);border-radius:0;padding:12px 22px;background:var(--ui-background);color:var(--ui-paper);box-shadow:none;font:inherit;transition:filter 160ms ease;cursor:pointer}
+.ui-design-root .ui-management-button[data-variant="paper"]{background:var(--ui-paper);color:var(--ui-text)}
 .ui-progress-header,.ui-administrative-divider{display:flex;align-items:center;gap:16px;border-block-end:1px solid var(--ui-frame)}
 .ui-progress-header{padding-block:12px;font-size:var(--ui-font-caption)}
 .ui-lease-stamp{display:inline-grid;place-items:center;border:2px solid var(--ui-warning);border-radius:0;padding:8px;color:var(--ui-warning);transform:rotate(-5deg)}

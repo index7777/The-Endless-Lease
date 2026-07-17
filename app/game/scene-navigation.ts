@@ -53,18 +53,19 @@ export function resolveSpawn(location: Location, spawnId: SpawnId, worldWidth: n
 
 export const ROOM_COLLIDERS: readonly CollisionRect[] = [
   // 家具位於後景；碰撞不得封住前景地板，也不得堵住房門出口。
-  { id: "bed", x1: .22, x2: .51, y1: .66, y2: .79 },
-  { id: "desk_and_chair", x1: .51, x2: .69, y1: .61, y2: .78 },
-  { id: "television_cabinet", x1: .66, x2: .78, y1: .59, y2: .78 },
-  { id: "wardrobe", x1: .75, x2: .91, y1: .33, y2: .79 },
+  { id: "television_cabinet", x1: .26, x2: .40, y1: .54, y2: .78 },
+  { id: "desk_and_chair", x1: .40, x2: .57, y1: .54, y2: .78 },
+  { id: "bed", x1: .59, x2: .82, y1: .57, y2: .79 },
+  { id: "wardrobe", x1: .82, x2: .96, y1: .30, y2: .79 },
 ];
 
 export const CLINIC_COLLIDERS: readonly CollisionRect[] = [
-  { id: "clinic_privacy_screen", x1: .08, x2: .15, y1: .33, y2: .88 },
-  { id: "clinic_treatment_table", x1: .30, x2: .61, y1: .49, y2: .88 },
-  { id: "clinic_trolley", x1: .58, x2: .68, y1: .56, y2: .88 },
-  { id: "clinic_desk", x1: .66, x2: .80, y1: .55, y2: .88 },
-  { id: "clinic_cabinet", x1: .79, x2: .94, y1: .30, y2: .88 },
+  // The left-hand room exit corridor must stay clear for the shared door interaction.
+  { id: "clinic_privacy_screen", x1: .41, x2: .50, y1: .30, y2: .79 },
+  { id: "clinic_treatment_table", x1: .50, x2: .67, y1: .49, y2: .79 },
+  { id: "clinic_trolley", x1: .64, x2: .72, y1: .53, y2: .79 },
+  { id: "clinic_desk", x1: .74, x2: .90, y1: .53, y2: .79 },
+  { id: "clinic_cabinet", x1: .88, x2: .98, y1: .28, y2: .79 },
 ];
 
 export function isWalkable(location: Location, x: number, y: number, worldWidth: number, viewportHeight: number, radius = 24, roomProfile: RoomCollisionProfile = "home") {
@@ -72,7 +73,7 @@ export function isWalkable(location: Location, x: number, y: number, worldWidth:
   if (Math.abs(y - ground.y) > viewportHeight * .12) return false;
   if (location === "elevator") return x - radius >= worldWidth * .11 && x + radius <= worldWidth * .84;
   if (location !== "room") return true;
-  if (x - radius < worldWidth * .085) return false;
+  if (x - radius < worldWidth * .06) return false;
   const colliders = roomProfile === "clinic" ? CLINIC_COLLIDERS : roomProfile === "management" ? [] : ROOM_COLLIDERS;
   return !colliders.some(rect => x + radius > rect.x1 * worldWidth && x - radius < rect.x2 * worldWidth && y > rect.y1 * viewportHeight && y - 8 < rect.y2 * viewportHeight);
 }

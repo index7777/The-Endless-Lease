@@ -40,7 +40,7 @@ try {
     await page.waitForTimeout(1500);
     await page.screenshot({ path: resolve(directory, "t14-title.png") });
 
-    await page.getByRole("button", { name: "走進公寓，撿起租屋字條" }).click();
+    await page.getByRole("button", { name: "開始入住登記" }).click();
     await page.getByRole("heading", { name: "輪迴入住登記表" }).waitFor();
     await page.screenshot({ path: resolve(directory, "t17-registration.png") });
 
@@ -58,7 +58,7 @@ try {
     await page.screenshot({ path: resolve(directory, "t18-fate-verdict.png") });
 
     await page.getByRole("button", { name: "擲出結果" }).click();
-    await page.getByRole("heading", { name: "依骰子結果可建檔的項目" }).waitFor();
+    await page.getByRole("heading", { name: "依骰子結果建立的檔案" }).waitFor();
     await page.screenshot({ path: resolve(directory, "t19-archive-selection.png") });
 
     const voiceDuration = await page.evaluate(async () => {
@@ -79,7 +79,7 @@ try {
     await page.locator(".filing-complete").waitFor();
     await page.screenshot({ path: resolve(directory, "t22-archive-complete.png") });
 
-    await page.getByRole("button", { name: /進入 \d+/ }).click();
+    await page.getByRole("button", { name: "入住", exact: true }).click();
     await page.locator(".topbar").waitFor({ timeout: 30000 });
     await page.waitForTimeout(1200);
     await page.screenshot({ path: resolve(directory, "t23-gameplay-ground-shadow.png") });
