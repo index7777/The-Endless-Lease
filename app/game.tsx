@@ -10,6 +10,7 @@ import { advanceDemoEnding, canAccessDemoFloor, DEMO_ENDING_ZH_TW } from "./game
 import type { DemoEndingState } from "./game/demo-ending";
 import { GAME_DAY_SECONDS, getTimePeriod, getTimePeriodIndex, getTimePeriodLabel, isPatrolLightManifested, isPatrolLightPeriod, sampleCharacterExposure, SCENE_PRESENTATION, TIME_PERIOD_PROFILES } from "./game/presentation-profiles";
 import { parseRunSave, RUN_SAVE_KEY, serializeRunSave } from "./game/run-save";
+import { getRentPursuitWave } from "./game/rent-pursuit";
 import { TitleAmbientEngine } from "./game/title-ambient";
 import type { RunSaveV1 } from "./game/run-save";
 import type { DebtEntry, Destiny, Enemy, FloorState, GameRuntime, Location, Pickup, StorageKind, StorageStack } from "./game/model";
@@ -63,7 +64,7 @@ const debtTotal = (ledger: DebtEntry[]) => ledger.reduce((total, entry) => total
 const phaseName = (time: number) => getTimePeriodLabel(time);
 const formatTime = (seconds: number) => { const whole = Math.ceil(seconds); return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`; };
 const inGameClock = (seconds: number) => {
-  const minutes = Math.floor((360 + (DAY_DURATION_SECONDS - seconds) * .8) % 1440);
+  const minutes = Math.floor((360 + (DAY_DURATION_SECONDS - seconds) * 2) % 1440);
   return `${String(Math.floor(minutes / 60)).padStart(2, "0")}:${String(minutes % 60).padStart(2, "0")}`;
 };
 const floorMonsterCap = (floor: number) => Math.min(10, 6 + Math.floor(floor / 10));
@@ -222,7 +223,7 @@ export default function Game() {
   const [availableSave, setAvailableSave] = useState<RunSaveV1 | null>(null);
   const [titleTransitioning, setTitleTransitioning] = useState(false);
   const [desktopScale, setDesktopScale] = useState(1);
-  const cinematicOverlayOpen = clearanceReportOpen || managementDialogueStep !== null || floor10NoticeOpen || demoEndingOpen || logOpen || profileOpen || savePanelOpen || exitPromptOpen || overdueNotice !== null;
+  const cinematicOverlayOpen = clearanceReportOpen || managementDialogueStep !== null || floor10NoticeOpen || demoEndingOpen || logOpen || profileOpen || savePanelOpen || exitPromptOpen;
 
   const playVoice = useCallback((number: number, onComplete?: () => void) => {
     if (typeof window === "undefined" || mutedRef.current) {
@@ -654,10 +655,9 @@ export default function Game() {
     }, 1500);
   }, [restoreRun, titleTransitioning]);
 
-  const spawnRentPursuers = useCallback((outstanding: number, targetLocation: Location, roomSlot?: number) => {
+  const spawnRentPursuers = useCallback((debtCount: number, targetLocation: Location, roomSlot?: number) => {
     const g = game.current;
-    const threat = Math.max(1, Math.ceil((outstanding + g.attention * 25) / 50));
-    const count = Math.min(4, 1 + Math.floor((outstanding + g.attention * 20) / 100));
+    const { threat, count } = getRentPursuitWave(debtCount);
     const localLimit = targetLocation === "hallway" ? WORLD_W - 80 : targetLocation === "elevator" ? ELEVATOR_W - 55 : ROOM_W - 70;
     for (let index = 0; index < count; index++) {
       g.enemies.push({
@@ -722,7 +722,7 @@ export default function Game() {
       g.rentProtectionLost = true;
       g.homeBreachTriggered = false;
       g.breachTick = 2;
-      const pursuit = spawnRentPursuers(g.arrears, location, location === "room" ? activeRoom ?? undefined : undefined);
+      const pursuit = spawnRentPursuers(g.debtLedger.length, location, location === "room" ? activeRoom ?? undefined : undefined);
       g.homeBreachTriggered = location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot;
       const notice = `欠租 ${outstanding} 租券。追租程序即刻生效；${pursuit.count} 名第 ${pursuit.threat} 級追租者已取得跨樓層追索權。`;
       setOverdueNotice(notice);
@@ -767,6 +767,12 @@ export default function Game() {
       window.clearTimeout(refusal);
     };
   }, [dead, resolveRent, settlement]);
+
+  useEffect(() => {
+    if (!overdueNotice) return;
+    const forcedClose = window.setTimeout(() => setOverdueNotice(null), 3000);
+    return () => window.clearTimeout(forcedClose);
+  }, [overdueNotice]);
 
   const resolveRoom = useCallback((choice: number) => {
     if (roomEvent === null) return;
@@ -899,13 +905,15 @@ export default function Game() {
       setMessage("B2 的按鍵沒有亮起：租約要求先清除 B1 異常源");
       return;
     }
+    const persistentPursuers = g.enemies.filter(enemy => enemy.hp > 0 && enemy.kind === "pursuer");
+    persistentPursuers.forEach((enemy, index) => { enemy.location = "hallway"; enemy.roomSlot = undefined; enemy.x = 760 - index * 52; enemy.y = 340 + (index % 2) * 120; });
     const hp = boss === "boss_b1" ? 420 : 680;
     g.activeBoss = boss;
     g.floor = boss === "boss_b1" ? 0 : -1;
     const bossEntry = resolveSpawn("hallway", "from_elevator", WORLD_W, canvasRef.current?.clientHeight || 900);
     g.player.x = bossEntry.ground.x; g.player.y = bossEntry.ground.y; g.player.facing = bossEntry.spawn.facing; g.camera = 900;
     if (g.defeatedBosses.includes(boss)) {
-      g.enemies = [];
+      g.enemies = persistentPursuers;
       g.pickups = boss === "boss_b2" && demoEndingState === "KEYCARD_DROPPED" ? [{ x: 520, y: bossEntry.ground.y, type: "特殊權限卡", taken: false }] : [];
       setLocation("hallway"); setActiveRoom(null);
       dispatchFlow({ type: "CLOSE_OVERLAY", kind: "floorSelect" });
@@ -913,7 +921,7 @@ export default function Game() {
       setHud(value => ({ ...value, floor: g.floor }));
       return;
     }
-    g.enemies = [{ x: 520, y: bossEntry.ground.y, hp, maxHp: hp, phase: 0, location: "hallway", followsIndoors: false, kind: boss }];
+    g.enemies = [{ x: 520, y: bossEntry.ground.y, hp, maxHp: hp, phase: 0, location: "hallway", followsIndoors: false, kind: boss }, ...persistentPursuers];
     g.pickups = [];
     setLocation("hallway"); setActiveRoom(null);
     dispatchFlow({ type: "CLOSE_OVERLAY", kind: "floorSelect" });
@@ -1106,7 +1114,7 @@ export default function Game() {
         });
         let entryMessage = isOwnRoom ? `${roomNumber(g.floor, nearbyDoor.slot)} 是你的承租房；門口可返回走廊` : `${roomNumber(g.floor, nearbyDoor.slot)}：走到異常物件旁按 E 探索`;
         if (isOwnRoom && g.rentProtectionLost && !g.homeBreachTriggered) {
-          const pursuit = spawnRentPursuers(Math.max(g.arrears, g.rentDue), "room", nearbyDoor.slot);
+          const pursuit = spawnRentPursuers(g.debtLedger.length, "room", nearbyDoor.slot);
           g.homeBreachTriggered = true; g.breachTick = 2;
           entryMessage = `租金保護已失效：牆膜侵蝕開始，${pursuit.count} 名第 ${pursuit.threat} 級追租者侵入房間`;
         }
@@ -1117,10 +1125,17 @@ export default function Game() {
         return;
       }
       if (g.player.x > 1690) {
-        g.player.x = 105; g.player.y = 690; g.camera = 0;
+        const elevatorSpawn = resolveSpawn("elevator", "from_hallway", ELEVATOR_W, canvasRef.current?.clientHeight || WORLD_H);
+        g.player.x = elevatorSpawn.ground.x;
+        g.player.y = elevatorSpawn.ground.y;
+        g.player.facing = elevatorSpawn.spawn.facing;
+        g.camera = 0;
         g.enemies.forEach((enemy, index) => {
           if (enemy.hp > 0 && enemy.location === "hallway" && enemy.followsIndoors && enemy.x > 1320) {
-            enemy.location = "elevator"; enemy.roomSlot = undefined; enemy.x = 55 + index * 28; enemy.y = 350 + (index % 2) * 95;
+            enemy.location = "elevator";
+            enemy.roomSlot = undefined;
+            enemy.x = clamp(520 + index * 38, 150, 790);
+            enemy.y = probeGround("elevator", enemy.x, ELEVATOR_W, canvasRef.current?.clientHeight || WORLD_H, enemy.y).y;
           }
         });
         keys.current = {};
@@ -1384,31 +1399,83 @@ export default function Game() {
           const dist = Math.hypot(p.x - e.x, p.y - e.y);
           const safeDist = Math.max(1, dist);
           const isBoss = e.kind === "boss_b1" || e.kind === "boss_b2";
+          const chaseDistance = (isBoss ? 620 : e.kind === "receipt" ? 550 : e.kind === "light" ? 450 : 330) * (1 + g.mortgageLayers * .05);
           e.attackTimer = Math.max(0, (e.attackTimer ?? 0) - dt);
           e.attackCooldown = Math.max(0, (e.attackCooldown ?? 0) - dt);
+          e.moving = false;
           if (e.kind === "wall" && !e.alerted) {
             e.y = band.top + 18;
-            if (dist < 175) {
+            if (dist < chaseDistance) {
               e.alerted = true;
+              e.aiState = "chase";
               setMessage("牆皮突然剝落：滲牆住戶脫離牆面");
               sound("hurt");
             } else continue;
           }
           const baseSpeed = e.kind === "receipt" ? 145 : e.kind === "light" ? 105 : isBoss ? 52 : 90;
           const contactDistance = isBoss ? 78 : 58;
-          const wallPause = e.kind === "wall" && Math.floor((now / 1000 + e.phase) / .42) % 2 === 1;
-          if (!wallPause && (dist < (isBoss ? 620 : e.kind === "receipt" ? 550 : e.kind === "light" ? 450 : 330) || e.elite) && dist > contactDistance && (e.attackTimer ?? 0) <= 0) {
-            const speed = e.elite ? moveSpeed * 1.05 : baseSpeed;
-            const enemyX = e.x + ((p.x - e.x) / safeDist) * speed * dt;
-            const enemyY = e.y + ((p.y - e.y) / safeDist) * (speed * .78) * dt;
-            if (isWalkable(location, enemyX, enemyY, localWorldWidth, h, isBoss ? 42 : 25, roomProfile)) { e.x = enemyX; e.y = enemyY; }
-            e.combatSeen = true;
+          if (!e.aiState) e.aiState = e.elite || dist <= chaseDistance ? "chase" : "patrol";
+          if (!e.elite && e.aiState === "chase" && dist > chaseDistance) {
+            e.aiState = "patrol";
+            e.patrolAnchorX = e.x;
+            e.patrolAnchorY = e.y;
+            e.patrolTargetX = undefined;
+            e.patrolTargetY = undefined;
+            e.patrolWait = 0;
+          } else if ((e.elite || dist <= chaseDistance) && e.aiState === "patrol") {
+            e.aiState = "chase";
+          }
+          e.patrolWait = Math.max(0, (e.patrolWait ?? 0) - dt);
+          if (e.aiState === "patrol" && (!e.patrolTargetX || !e.patrolTargetY || Math.hypot(e.patrolTargetX - e.x, e.patrolTargetY - e.y) < 34)) {
+            if ((e.patrolWait ?? 0) <= 0) {
+              const patrolSeed = now / 5200 + e.phase + (e.patrolAnchorX ?? e.x) * .003;
+              for (let attempt = 0; attempt < 5; attempt++) {
+                const ratio = (Math.sin(patrolSeed + attempt * 1.73) + 1) / 2;
+                const targetX = 70 + ratio * (localWorldWidth - 140);
+                const targetY = band.top + 36 + ((Math.cos(patrolSeed * .83 + attempt) + 1) / 2) * Math.max(32, band.bottom - band.top - 72);
+                if (isWalkable(location, targetX, targetY, localWorldWidth, h, isBoss ? 42 : 25, roomProfile)) {
+                  e.patrolTargetX = targetX;
+                  e.patrolTargetY = targetY;
+                  break;
+                }
+              }
+              e.patrolWait = .35;
+            }
+          }
+          const targetX = e.aiState === "chase" ? p.x : e.patrolTargetX;
+          const targetY = e.aiState === "chase" ? p.y : e.patrolTargetY;
+          if (targetX !== undefined && targetY !== undefined && dist > (e.aiState === "chase" ? contactDistance : 20) && (e.attackTimer ?? 0) <= 0) {
+            const targetDist = Math.max(1, Math.hypot(targetX - e.x, targetY - e.y));
+            const speed = e.aiState === "chase" ? (e.elite ? moveSpeed * 1.05 : baseSpeed) : baseSpeed * .55;
+            const dx = ((targetX - e.x) / targetDist) * speed * dt;
+            const dy = ((targetY - e.y) / targetDist) * (speed * .78) * dt;
+            const candidates = [[e.x + dx, e.y + dy], [e.x + dx, e.y], [e.x, e.y + dy], [e.x + dx * .55, e.y - dy * .7]];
+            const next = candidates.find(([x, y]) => isWalkable(location, x, y, localWorldWidth, h, isBoss ? 42 : 25, roomProfile));
+            if (next) {
+              const previousX = e.x;
+              const previousY = e.y;
+              e.x = next[0]; e.y = next[1];
+              e.moving = Math.hypot(e.x - previousX, e.y - previousY) > .01;
+              if (Math.abs(e.x - previousX) > .01) e.facing = e.x > previousX ? -1 : 1;
+              e.stuckSeconds = 0;
+              if (e.aiState === "chase") e.combatSeen = true;
+            } else {
+              e.stuckSeconds = (e.stuckSeconds ?? 0) + dt;
+              if (e.stuckSeconds >= .8) {
+                e.aiState = dist <= chaseDistance || e.elite ? "chase" : "patrol";
+                e.patrolTargetX = undefined;
+                e.patrolTargetY = undefined;
+                e.y = probeGround(location, clamp(e.x, 70, localWorldWidth - 70), localWorldWidth, h, e.y).y;
+                e.stuckSeconds = 0;
+              }
+            }
           }
           if (dist < contactDistance) {
             const nx = dist > 1 ? (e.x - p.x) / dist : Math.cos(e.phase || 1);
             const ny = dist > 1 ? (e.y - p.y) / dist : Math.sin(e.phase || 1) * .55;
-            e.x = clamp(p.x + nx * contactDistance, 55, localWorldWidth - 55);
-            e.y = clamp(p.y + ny * contactDistance * .72, band.top, band.bottom);
+            const contactX = clamp(p.x + nx * contactDistance, 55, localWorldWidth - 55);
+            const contactY = clamp(p.y + ny * contactDistance * .72, band.top, band.bottom);
+            if (isWalkable(location, contactX, contactY, localWorldWidth, h, isBoss ? 42 : 25, roomProfile)) { e.x = contactX; e.y = contactY; }
           }
           if (dist <= contactDistance + 7 && (e.attackCooldown ?? 0) <= 0 && (e.attackTimer ?? 0) <= 0) {
             e.attackTimer = isBoss ? .68 : .48;
@@ -1552,7 +1619,7 @@ export default function Game() {
         const enemyScale = .82 + enemyDepth * .26;
         const enemyDistance = Math.hypot(p.x - e.x, p.y - e.y);
         const attacking = e.hp > 0 && (e.attackTimer ?? 0) > 0;
-        const movingEnemy = !attacking && enemyDistance < (isBoss ? 640 : e.elite ? 520 : 390);
+        const movingEnemy = !attacking && Boolean(e.moving);
         const step = movingEnemy ? Math.sin(now / (isBoss ? 145 : 105) + e.phase) : 0;
         const attackProgress = attacking ? 1 - (e.attackTimer ?? 0) / (isBoss ? .68 : .48) : 0;
         const lunge = attacking ? Math.sin(attackProgress * Math.PI) * (isBoss ? 18 : 11) : 0;
@@ -1560,7 +1627,7 @@ export default function Game() {
         const enemyShadowDx = clamp((e.x / sceneWidth - nearestEnemyLight) * 58, -24, 24);
         const lightManifested = e.kind !== "light" || isPatrolLightManifested(now, e.phase, e.hp, g.time);
         if (lightManifested) { ctx.save(); ctx.filter = "blur(2px)"; ctx.fillStyle = `rgba(0,0,0,${.2 + enemyDepth * .14})`; ctx.beginPath(); ctx.ellipse(e.x + enemyShadowDx, e.y + 2, (e.elite || isBoss ? 48 : 34) * enemyScale, (e.elite || isBoss ? 10 : 8) * enemyScale, enemyShadowDx * .009, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
-        const enemyFacing = e.hp <= 0 ? (e.deathFacing ?? 1) : (p.x > e.x ? -1 : 1);
+        const enemyFacing = e.hp <= 0 ? (e.deathFacing ?? 1) : e.aiState === "patrol" ? (e.facing ?? 1) : (p.x > e.x ? -1 : 1);
         const corpseFade = e.hp <= 0 && e.deathTimer !== undefined ? clamp(e.deathTimer, 0, 1) : 1;
         const enemyExposure = sampleCharacterExposure(location, .5, g.time) * (e.kind === "light" ? .62 : 1);
         ctx.save(); ctx.translate(e.x + (e.hp > 0 && p.x > e.x ? lunge : e.hp > 0 ? -lunge : 0), e.y); ctx.scale(enemyFacing, 1); ctx.filter = `brightness(${enemyExposure}) saturate(.86)`;
@@ -1699,29 +1766,30 @@ export default function Game() {
   }, [activeRoom, cinematicOverlayOpen, controls, demoEndingState, flow.screen, paused, floorSelect, roomEvent, storageOpen, location, destiny.attributes, destiny.floor, destiny.roomSlot, destiny.gender, destiny.talent, destiny.defect, sound]);
 
   useEffect(() => {
-    const updateDesktopScale = () => setDesktopScale(Math.min(1, window.innerWidth / 1600, window.innerHeight / 900));
+    const updateDesktopScale = () => {
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
+      setDesktopScale(Math.min(1, viewportWidth / 1600, viewportHeight / 900));
+    };
     updateDesktopScale();
     window.addEventListener("resize", updateDesktopScale);
-    return () => window.removeEventListener("resize", updateDesktopScale);
+    window.visualViewport?.addEventListener("resize", updateDesktopScale);
+    return () => {
+      window.removeEventListener("resize", updateDesktopScale);
+      window.visualViewport?.removeEventListener("resize", updateDesktopScale);
+    };
   }, []);
   const maxHp = 76 + destiny.attributes[0] * 5;
   const maxStamina = 72 + destiny.attributes[1] * 5;
   const attentionLabel = hud.attention <= 1 ? "未留意" : hud.attention <= 3 ? "低度監控" : hud.attention <= 5 ? "監控強化" : hud.attention <= 7 ? "高度關注" : hud.attention <= 9 ? "全面追蹤" : "回收程序";
   const managementBroadcast = /管理室|租約|租金|欠款|追租程序|居住權|結算/.test(message);
-  const endingObjective = ["KEYCARD_DROPPED","B2_DEFEATED"].includes(demoEndingState)
-    ? ["拾取異常物件","取得特殊權限卡"]
-    : ["KEYCARD_COLLECTED","CLEARANCE_REPORT_VIEWED","FLOOR10_BUTTON_DISCOVERED","RETURN_TO_OFFICE"].includes(demoEndingState)
-      ? ["返回管理室","交付特殊權限卡"]
-      : demoEndingState === "POST_B2_FREE_ROAM"
-        ? ["前往 10F","查看控制盤文件槽"]
-        : demoEndingState !== "B2_ALIVE" ? ["本輪紀錄","等待管理室封存"] : null;
-
   return (
     <main className={`game-shell ${started ? "is-started" : "is-menu"}`}>
+      <div className="desktop-game-viewport" style={{ width: 1600 * desktopScale, height: 900 * desktopScale }}>
       <div className="desktop-game-stage" style={{ transform: `scale(${desktopScale})` }}>
       <canvas ref={canvasRef} className="game-canvas" aria-label="無期租寓可玩遊戲區" />
       <div className="film" />
-      <header className="topbar"><span>無期租寓</span><b>第 {hud.day} 日　目前樓層 {game.current.activeBoss ? (game.current.activeBoss === "boss_b1" ? "B1" : "B2") : `${hud.floor}F`}　承租房 {roomNumber(destiny.floor, destiny.roomSlot)}</b><button onClick={() => setProfileOpen(true)}>住戶檔案</button><button onClick={() => { if (!paused) dispatchFlow({ type: "TOGGLE_PAUSE" }); setTerminalRecordOpen(false); setLogOpen(true); }}>住戶紀錄</button><button disabled={flow.overlay.kind !== "none" || dead || complete} onClick={() => dispatchFlow({ type: "TOGGLE_PAUSE" })}>{paused ? "繼續" : "暫停"}</button></header>
+      <header className="topbar"><span>無期租寓</span><b>第 {hud.day} 日　目前時間 {inGameClock(hud.time)}　{phaseName(hud.time)}　目前樓層 {game.current.activeBoss ? (game.current.activeBoss === "boss_b1" ? "B1" : "B2") : `${hud.floor}F`}　承租房 {roomNumber(destiny.floor, destiny.roomSlot)}</b><button onClick={() => setProfileOpen(true)}>住戶檔案</button><button onClick={() => { if (!paused) dispatchFlow({ type: "TOGGLE_PAUSE" }); setTerminalRecordOpen(false); setLogOpen(true); }}>住戶紀錄</button><button disabled={flow.overlay.kind !== "none" || dead || complete} onClick={() => dispatchFlow({ type: "TOGGLE_PAUSE" })}>{paused ? "繼續" : "暫停"}</button></header>
       <section className="rent-card"><small>今日租金</small><strong>{hud.rentDue} 租券</strong><b>距離結算　{formatTime(hud.time)}</b><em>既有欠款　{hud.debt} 租券</em></section>
       <section className="vitals"><label><span>生命　{Math.ceil(hud.hp)} / {maxHp}</span><i style={{ width: `${clamp(hud.hp / maxHp * 100, 0, 100)}%` }} /></label><label><span>體力　{Math.ceil(hud.stamina)} / {maxStamina}</span><i style={{ width: `${clamp(hud.stamina / maxStamina * 100, 0, 100)}%` }} /></label></section>
       <section className="score-card"><small>租券</small><strong>{hud.rent}</strong><span>戰力　{hud.score}</span></section>
@@ -1732,7 +1800,6 @@ export default function Game() {
         <button className="talent-button" onClick={useTalent} disabled={hud.skillCooldown > 0}><i>Q</i><b>{destiny.talent}</b><span>{hud.skillCooldown > 0 ? `${Math.ceil(hud.skillCooldown)}秒` : "可使用"}</span></button>
       </div>}
       {managementBroadcast ? <div key={message} className="mission"><small>管理室通知</small><span>{message}</span></div> : <div key={message} className="action-toast">{message}</div>}
-      {started && <div className="demo-goal"><small>目前目標</small><b>{endingObjective?.[0] ?? (hud.bossB1 ? "前往 B2" : "前往 B1")}</b><em>{endingObjective?.[1] ?? (hud.bossB1 ? "調查底層核心區" : "清除底層異常源")}</em></div>}
       {hud.landlordTask && <div className="task-slip"><small>房東委託</small><b>清除追租異常</b><span>{hud.taskKills} / 2</span></div>}
       {started && <section className={`lease-status ${hud.debt > 0 ? "overdue" : ""}`}><h3>租約狀態</h3><dl><div><dt>欠款</dt><dd>{hud.debt} 租券</dd></div><div><dt>追租程序</dt><dd>{hud.debt > 0 ? "已啟動" : "未啟動"}</dd></div><div><dt>承租房保護</dt><dd>{debtStatus.protectionLost ? "失效" : "有效"}</dd></div><div><dt>公寓關注度</dt><dd>{Math.min(10,hud.attention)} / 10</dd></div><div><dt>監控狀態</dt><dd>{attentionLabel}</dd></div></dl></section>}
       {elevatorVoiceSubtitle && <div className="hongyi-elevator-subtitle" role="status"><b>管理員・紅怡</b><span>{elevatorVoiceSubtitle}</span></div>}
@@ -1742,7 +1809,7 @@ export default function Game() {
       {paused && settingsOpen && <DesignSystemRoot className="settings-ledger"><article><header><small>管理室｜操作設定</small><h2>按鍵配置</h2></header><div>{([['up','向上'],['down','向下'],['left','向左'],['right','向右'],['sprint','奔跑'],['attack','攻擊'],['interact','互動'],['talent','天賦']] as Array<[ControlAction,string]>).map(([action,label]) => <ManagementButton key={action} onClick={() => setListeningControl(action)}><span>{label}</span><b>{listeningControl === action ? "請按下按鍵" : controls[action] === " " ? "Space" : controls[action].toUpperCase()}</b></ManagementButton>)}</div><footer><ManagementButton data-variant="paper" onClick={() => { setListeningControl(null); setSettingsOpen(false); }}>完成</ManagementButton></footer></article></DesignSystemRoot>}
       {savePanelOpen && <DesignSystemRoot className="save-ledger"><article><header><small>無期租寓管理室｜住戶存檔簿</small><h2>存檔管理</h2><ManagementButton onClick={() => setSavePanelOpen(false)}>關閉文件</ManagementButton></header><div className="save-slots">{saveRecords.map((record,index)=><section key={index}><div className="save-thumbnail">{record?.thumbnail ? <img src={record.thumbnail} alt={`存檔 ${index} 場景縮圖`}/> : <span>尚無場景縮圖</span>}</div><small>{index === 0 ? "自動存檔" : `手動存檔 ${index}`}</small><b>{record ? new Date(record.savedAt).toLocaleString("zh-TW") : "空白欄位"}</b>{index === 0 ? <em>遊戲進度自動更新</em> : <ManagementButton onClick={() => writeSaveRecord(index)}>覆寫存檔</ManagementButton>}</section>)}</div></article></DesignSystemRoot>}
       {exitPromptOpen && <section className="exit-save-prompt"><article><small>離開前存檔詢問</small><h2>是否保存本輪進度？</h2><p>選擇「是」會更新自動存檔與場景縮圖；選擇「否」會清除本輪自動進度後離開。</p><footer><button onClick={() => leaveRunFromPause(true)}>是，存檔後離開</button><button onClick={() => leaveRunFromPause(false)}>否，直接離開</button><button onClick={() => setExitPromptOpen(false)}>取消</button></footer></article></section>}
-      {overdueNotice && <section className="overdue-notice"><article><small>管理室牆面公告槽｜追租執行通知</small><h2>拒絕交租紀錄</h2><p>{overdueNotice}</p><strong>追租者可進入房間、公共樓層、電梯與管理室，直至住戶死亡或本輪程序終止。</strong><button onClick={() => setOverdueNotice(null)}>收下公告</button></article></section>}
+      {overdueNotice && <section className="overdue-notice" aria-live="assertive"><article><small>管理室牆面公告槽｜追租執行通知｜3 秒後收回</small><h2>拒絕交租紀錄</h2><p>{overdueNotice}</p><strong>公告期間遊戲持續；追租者可立即攻擊，並可進入房間、公共樓層、電梯與管理室。</strong></article></section>}
       {logOpen && <section className="resident-log"><div><header><small>{terminalRecordOpen ? "本輪已封存｜唯讀文件" : "住戶個人文件"}</small><h2>住戶執行紀錄</h2><button onClick={() => { setLogOpen(false); if (terminalRecordOpen) setDemoEndingOpen(true); }}>關閉</button></header><p>{terminalRecordOpen ? "結案後不可恢復探索；關閉文件將返回結案畫面。" : "此處只記錄本輪住戶的行動與結果，不屬於管理室公告。"}</p><ol>{residentLog.length ? residentLog.map((entry,index)=><li key={`${entry}-${index}`}>{entry}</li>) : <li>本輪尚無執行紀錄。</li>}</ol></div></section>}
       {profileOpen && <section className="resident-profile"><article><header><small>無期租寓管理室｜住戶隨身檔案</small><h2>{residentName || "未署名住戶"}</h2><button onClick={() => setProfileOpen(false)}>收回檔案</button></header><div className="profile-columns"><section><h3>本輪身份</h3><dl><div><dt>承租房</dt><dd>{roomNumber(destiny.floor,destiny.roomSlot)}</dd></div><div><dt>身份背景</dt><dd>{destiny.identity}</dd></div><div><dt>天賦／缺陷</dt><dd>{destiny.talent}／{destiny.defect}</dd></div><div><dt>武器登記</dt><dd>改造鋼管 Lv.{hud.weaponLevel}</dd></div></dl></section><section><h3>背包</h3><div className="profile-inventory"><span><small>租券</small><b>{hud.rent}</b></span><span><small>過期藥品</small><b>×{hud.medkits}</b></span><span><small>房門鑰匙</small><b>×{hud.keysOwned}</b></span><span className="permission-item"><small>特殊權限物</small><b>{["KEYCARD_COLLECTED","CLEARANCE_REPORT_VIEWED","FLOOR10_BUTTON_DISCOVERED","RETURN_TO_OFFICE"].includes(demoEndingState) ? "10F 權限卡｜隨身" : ["KEYCARD_DELIVERED","POST_B2_FREE_ROAM","FLOOR10_NOTICE_DISCOVERED","DEMO_ENDING_STARTED","DEMO_COMPLETED"].includes(demoEndingState) ? "10F 權限卡｜管理室登記" : "未持有"}</b></span></div></section></div><footer>按 C 開啟／收回住戶檔案。行政事件期間不可翻閱。</footer></article></section>}
       {flow.screen === "title" && <DesignSystemRoot className={`start-screen ${titleTransitioning ? "is-leaving" : ""}`}>
@@ -1759,13 +1826,13 @@ export default function Game() {
         </div>
       </DesignSystemRoot>}
       {introOpen && <section className="intro-screen">
-        <article className="intro-contract" aria-label="輪迴入住登記表">
+        <article className="intro-contract" aria-label="入住登記表">
           <header className="registration-header">
             <b>無期租寓管理室</b>
             <small>WUCHI APARTMENT MANAGEMENT OFFICE</small>
             <span>表單 01-A<br/>FORM 01-A</span>
           </header>
-          <h1>輪迴入住登記表</h1>
+          <h1>入住登記表</h1>
           <h2>入寓抵債，萬事皆平</h2>
           <div className="registration-copy">
             <p>現實從不會無故吞沒一個人，它只會先奪走一張被規則允許的假象。</p>
@@ -1791,7 +1858,7 @@ export default function Game() {
         <nav className="filing-progress" aria-label="租約建檔進度"><span className={filingStage === "ready" || filingStage === "rolling" ? "active" : "done"}>骰子結果</span><i>›</i><span className={filingStage === "attributes" ? "active" : filingStage === "briefing" || filingStage === "result" || filingStage === "complete" ? "done" : ""}>選擇建檔</span><i>›</i><span className={filingStage === "briefing" || filingStage === "result" || filingStage === "complete" ? "active" : ""}>身份確認</span></nav>
         <div className="contract-head">
           <span>無期租寓管理室</span>
-          <small>輪迴入住登記表｜表單 17-B</small>
+          <small>入住登記表｜表單 17-B</small>
           {(filingStage !== "ready" && filingStage !== "rolling") && <h2>租約建檔</h2>}
           <p>{filingStage === "complete"
             ? "建檔程序已完成。你的身份已被管理室正式存檔。"
@@ -1904,6 +1971,7 @@ export default function Game() {
       {started && demoEndingOpen && <section className="demo-ending-cinematic"><article><small>本輪紀錄｜已封存</small><h2>{DEMO_ENDING_ZH_TW["demo.ending.title"]}</h2><p>{DEMO_ENDING_ZH_TW["demo.ending.body"]}</p><strong>{DEMO_ENDING_ZH_TW["demo.ending.teaser"]}</strong><footer><button onClick={() => { setDemoEndingOpen(false); setTerminalRecordOpen(true); setLogOpen(true); }}>查看本輪紀錄</button><button className="asset-button" onClick={() => { progressDemoEnding("DEMO_COMPLETED"); setDemoEndingOpen(false); setTerminalRecordOpen(false); setFilingStage("ready"); window.localStorage.removeItem(RUN_SAVE_KEY); setAvailableSave(null); dispatchFlow({type:"COMPLETE_DEMO"}); dispatchFlow({type:"RETURN_TITLE"}); }}>返回標題</button></footer></article></section>}
       {dead && deathReady && <button className="death" onClick={() => { game.current.dead = false; setFilingStage("ready"); dispatchFlow({ type: "RESTART" }); setLocation("hallway"); setActiveRoom(null); setDestiny(createDestiny()); }}>你已融入公寓<br/><span>重新入住</span></button>}
       {complete && null}
+      </div>
       </div>
     </main>
   );

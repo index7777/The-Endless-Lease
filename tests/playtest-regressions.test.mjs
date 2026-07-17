@@ -4,6 +4,7 @@ import test from "node:test";
 
 const game = await readFile(new URL("../app/game.tsx", import.meta.url), "utf8");
 const navigation = await readFile(new URL("../app/game/scene-navigation.ts", import.meta.url), "utf8");
+const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
 test("keeps T14 on the approved logo and shared management buttons", () => {
   assert.match(game, /<img src="\/logo-title-v1\.png" alt="無期租寓"\/>/);
@@ -11,11 +12,19 @@ test("keeps T14 on the approved logo and shared management buttons", () => {
   assert.doesNotMatch(game, /title-primary-action/);
   assert.doesNotMatch(game, /無期租約｜第 17 次輪迴/);
   assert.doesNotMatch(game, /Demo 目標：依序清除 B1、B2 底層異常源/);
+  assert.doesNotMatch(game, /輪迴入住登記表/);
+  assert.match(game, /aria-label="入住登記表"/);
 });
 
-test("keeps the thirty-minute demo clock and three-second medicine cooldown", () => {
+test("keeps the twelve-minute demo clock and three-second medicine cooldown", () => {
   assert.match(game, /DAY_DURATION_SECONDS = GAME_DAY_SECONDS/);
+  assert.match(game, /\(DAY_DURATION_SECONDS - seconds\) \* 2/);
   assert.match(game, /setMedkitCooldown\(3\)/);
+});
+
+test("keeps the current in-game time and four-period label visible in the top bar", () => {
+  assert.match(game, /目前時間 \{inGameClock\(hud\.time\)\}/);
+  assert.match(game, /\{phaseName\(hud\.time\)\}/);
 });
 
 test("ships candidate motion, attack, hit and collapse sheets for players and enemies", async () => {
@@ -43,12 +52,24 @@ test("keeps room, clinic and elevator movement inside world collision profiles",
   assert.match(game, /g\.player\.x <= 330/);
   assert.match(game, /location === "elevator" \? 128/);
   assert.match(game, /location === "elevator" \? 812/);
+  assert.match(game, /resolveSpawn\("elevator", "from_hallway", ELEVATOR_W/);
+  assert.doesNotMatch(game, /g\.player\.x = 105; g\.player\.y = 690/);
 });
 
 test("keeps the game desktop-only and scales the complete stage proportionally", () => {
+  assert.match(game, /desktop-game-viewport/);
   assert.match(game, /desktop-game-stage/);
-  assert.match(game, /Math\.min\(1, window\.innerWidth \/ 1600, window\.innerHeight \/ 900\)/);
+  assert.match(game, /viewportWidth \/ 1600, viewportHeight \/ 900/);
+  assert.match(game, /width: 1600 \* desktopScale, height: 900 \* desktopScale/);
+  assert.match(game, /window\.visualViewport\?\.addEventListener\("resize", updateDesktopScale\)/);
+  assert.match(css, /\.desktop-game-viewport \{[^}]*overflow:hidden/);
+  assert.match(css, /\.desktop-game-stage \{[^}]*transform-origin:left top/);
   assert.doesNotMatch(game, /touch-controls|onPointerDown=\{\(\) => joy/);
+});
+
+test("does not render the retired persistent demo objective HUD", () => {
+  assert.doesNotMatch(game, /className="demo-goal"/);
+  assert.doesNotMatch(game, /<small>目前目標<\/small>/);
 });
 
 test("does not duplicate dossier card copy in native hover tooltips", () => {
@@ -70,6 +91,18 @@ test("keeps patrol-light invisibility visual-only and disables it on death", () 
   assert.match(game, /ctx\.globalAlpha \*= lightManifested \? corpseFade : 0/);
   assert.match(game, /e\.hp > 0 && lightManifested && \(isBoss \|\| e\.elite \|\| e\.combatSeen \|\| enemyDistance < 270\)/);
   assert.doesNotMatch(game, /if \(!lightManifested\) continue/);
+});
+
+test("keeps the rent notice non-blocking and forces it closed after three seconds", () => {
+  assert.doesNotMatch(game, /cinematicOverlayOpen[^\n]+overdueNotice/);
+  assert.match(game, /window\.setTimeout\(\(\) => setOverdueNotice\(null\), 3000\)/);
+  assert.doesNotMatch(game, /onClick=\{\(\) => setOverdueNotice\(null\)\}/);
+});
+
+test("keeps living pursuers when a new wave or boss encounter begins", () => {
+  assert.match(game, /const persistentPursuers = g\.enemies\.filter\(enemy => enemy\.hp > 0 && enemy\.kind === "pursuer"\)/);
+  assert.match(game, /kind: boss \}, \.\.\.persistentPursuers/);
+  assert.doesNotMatch(game, /Math\.min\(4, 1 \+ Math\.floor/);
 });
 
 test("keeps management independent and preserves the terminal ending", () => {

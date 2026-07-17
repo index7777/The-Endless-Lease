@@ -1,6 +1,6 @@
 import type { Location } from "./model";
 
-export const GAME_DAY_SECONDS = 1800;
+export const GAME_DAY_SECONDS = 720;
 export type TimePeriod = "daylight" | "evening" | "curfew_night" | "uncanny_dawn";
 export const TIME_PERIOD_ORDER: readonly TimePeriod[] = ["daylight", "evening", "curfew_night", "uncanny_dawn"];
 export const TIME_PERIOD_LABELS: Record<TimePeriod, string> = {
@@ -30,9 +30,9 @@ export const UI_THEME = {
 
 export function getTimePeriod(secondsRemaining: number): TimePeriod {
   const elapsed = GAME_DAY_SECONDS - Math.max(0, Math.min(GAME_DAY_SECONDS, secondsRemaining));
-  if (elapsed < 600) return "daylight";
-  if (elapsed < 1050) return "evening";
-  if (elapsed < 1575) return "curfew_night";
+  if (elapsed < 240) return "daylight";
+  if (elapsed < 420) return "evening";
+  if (elapsed < 630) return "curfew_night";
   return "uncanny_dawn";
 }
 

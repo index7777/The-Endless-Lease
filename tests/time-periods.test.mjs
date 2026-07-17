@@ -13,19 +13,19 @@ import {
   TIME_PERIOD_PROFILES,
 } from "../app/game/presentation-profiles.ts";
 
-test("uses exactly the four production time periods over the 30-minute day", () => {
-  assert.equal(GAME_DAY_SECONDS, 1800);
+test("uses exactly the four production time periods over the 12-minute day", () => {
+  assert.equal(GAME_DAY_SECONDS, 720);
   assert.deepEqual(TIME_PERIOD_ORDER, ["daylight", "evening", "curfew_night", "uncanny_dawn"]);
-  assert.equal(getTimePeriod(1800), "daylight");
-  assert.equal(getTimePeriod(1201), "daylight");
-  assert.equal(getTimePeriod(1200), "evening");
-  assert.equal(getTimePeriod(751), "evening");
-  assert.equal(getTimePeriod(750), "curfew_night");
-  assert.equal(getTimePeriod(226), "curfew_night");
-  assert.equal(getTimePeriod(225), "uncanny_dawn");
+  assert.equal(getTimePeriod(720), "daylight");
+  assert.equal(getTimePeriod(481), "daylight");
+  assert.equal(getTimePeriod(480), "evening");
+  assert.equal(getTimePeriod(301), "evening");
+  assert.equal(getTimePeriod(300), "curfew_night");
+  assert.equal(getTimePeriod(91), "curfew_night");
+  assert.equal(getTimePeriod(90), "uncanny_dawn");
   assert.equal(getTimePeriod(0), "uncanny_dawn");
-  assert.deepEqual([1800, 1200, 750, 225].map(getTimePeriodIndex), [0, 1, 2, 3]);
-  assert.deepEqual([1800, 1200, 750, 225].map(getTimePeriodLabel), ["白晝", "黃昏", "宵禁深夜", "臨晨詭時"]);
+  assert.deepEqual([720, 480, 300, 90].map(getTimePeriodIndex), [0, 1, 2, 3]);
+  assert.deepEqual([720, 480, 300, 90].map(getTimePeriodLabel), ["白晝", "黃昏", "宵禁深夜", "臨晨詭時"]);
 });
 
 test("gives every period a distinct scene-lighting profile", () => {
@@ -38,25 +38,25 @@ test("gives every period a distinct scene-lighting profile", () => {
   assert.ok(profiles[0].outageChance < profiles[3].outageChance);
 });
 
-test("removes the obsolete five-period and 720-second visual clock", async () => {
+test("removes the obsolete five-period and 1800-second visual clock", async () => {
   const source = await readFile(new URL("../app/game/presentation-profiles.ts", import.meta.url), "utf8");
-  assert.doesNotMatch(source, /"morning"|"night"|"deep_night"|720 - secondsRemaining/);
+  assert.doesNotMatch(source, /"morning"|"night"|"deep_night"|GAME_DAY_SECONDS = 1800/);
 });
 
 test("allows patrol-light remnants only during curfew night and uncanny dawn", () => {
-  assert.equal(isPatrolLightPeriod(1201), false);
-  assert.equal(isPatrolLightPeriod(1200), false);
-  assert.equal(isPatrolLightPeriod(751), false);
-  assert.equal(isPatrolLightPeriod(750), true);
-  assert.equal(isPatrolLightPeriod(226), true);
-  assert.equal(isPatrolLightPeriod(225), true);
+  assert.equal(isPatrolLightPeriod(481), false);
+  assert.equal(isPatrolLightPeriod(480), false);
+  assert.equal(isPatrolLightPeriod(301), false);
+  assert.equal(isPatrolLightPeriod(300), true);
+  assert.equal(isPatrolLightPeriod(91), true);
+  assert.equal(isPatrolLightPeriod(90), true);
   assert.equal(isPatrolLightPeriod(0), true);
 });
 
 test("patrol-light visibility flickers while alive but remains visible after death", () => {
-  const samples = Array.from({ length: 160 }, (_, index) => isPatrolLightManifested(index * 25, 2.2, 75, 500));
+  const samples = Array.from({ length: 160 }, (_, index) => isPatrolLightManifested(index * 25, 2.2, 75, 200));
   assert.ok(samples.includes(true));
   assert.ok(samples.includes(false));
-  assert.equal(isPatrolLightManifested(0, 2.2, 75, 1200), false);
-  assert.equal(isPatrolLightManifested(0, 2.2, 0, 500), true);
+  assert.equal(isPatrolLightManifested(0, 2.2, 75, 480), false);
+  assert.equal(isPatrolLightManifested(0, 2.2, 0, 200), true);
 });

@@ -22,6 +22,15 @@ export type Enemy = {
   deathDuration?: number;
   deathFacing?: -1 | 1;
   rewardGranted?: boolean;
+  aiState?: "patrol" | "chase";
+  patrolAnchorX?: number;
+  patrolAnchorY?: number;
+  patrolTargetX?: number;
+  patrolTargetY?: number;
+  patrolWait?: number;
+  stuckSeconds?: number;
+  moving?: boolean;
+  facing?: -1 | 1;
 };
 
 export type DebtEntry = {

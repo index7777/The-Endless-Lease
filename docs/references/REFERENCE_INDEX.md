@@ -1,6 +1,6 @@
 # 《無期租寓》正式基準素材索引
 
-最後更新：2026-07-16
+最後更新：2026-07-17
 
 只有 `docs/references/approved/` 內並列於本索引的素材可以作為正式基準。圖片內 AI 生成文字、房號、數值與錯字一律不可直接沿用；正式文字由程式與資料表提供。
 
@@ -86,10 +86,30 @@
 - 取代關係：將原 `ChatGPT Image 2026年7月16日 下午02_32_00.png` 正式化。
 - SHA-256：`5dc674e3410136c6544b8fda517e62928b65cf654922a87642cdeb2441aa61d7`
 
+## Animation Pose References
+
+### `animation/female-unarmed-kick-impact-reference-a-v1.png`
+
+- 用途：女性角色未持武器踢擊的命中瞬間姿勢參考；鎖定髖部與軀幹轉向、支撐腿承重、踢擊腿由髖部送出及上身反向平衡。
+- 批准範圍：只批准動作力學、踢擊方向與命中姿態；不得沿用圖中人物臉孔、身材、服裝、敵人、場景、光線、文字或材質。
+- 素材狀態：Pose Reference，不是 Animation Source、Sprite Sheet 或通過 Animation Validator 的正式動畫。
+- 版本：v1。
+- 來源：製作人於 2026-07-17 提供的 `Gemini_Generated_Image_bqjaxebqjaxebqja.png`。
+- SHA-256：`5f2ab83be91af6f3111aecb9f55b57ff98585da3504ce7677625a6f54ed027bc`
+
+### `animation/female-unarmed-kick-impact-reference-b-v1.png`
+
+- 用途：女性角色未持武器踢擊的第二張命中瞬間姿勢參考；與 reference A 共同約束踢腿高度、身體旋轉、重心與反作用姿勢。
+- 批准範圍：只批准動作力學、踢擊方向與命中姿態；不得沿用圖中人物臉孔、身材、服裝、敵人、場景、光線、文字或材質。
+- 素材狀態：Pose Reference，不是 Animation Source、Sprite Sheet 或通過 Animation Validator 的正式動畫。
+- 版本：v1。
+- 來源：製作人於 2026-07-17 提供的 `Gemini_Generated_Image_zaf32ozaf32ozaf3.png`。
+- SHA-256：`fe8ebbec4142df0ce100f6d21c778c1999fef63700665e2c7e914e1abf0b8cb5`
+
 ## 其他類別
 
 - `characters/`：尚無已批准角色比例基準；不得用聊天圖自行補入。
-- `animation/`：尚無通過 Animation Validator 的正式動畫基準。
+- `animation/`：已有女性空手踢擊 Pose Reference，但尚無通過 Animation Validator 的正式動畫基準。
 - `environments/`：待從既有定案場景建立正式索引。
 - `lighting/`：待建立場景光照基準。
 - `audio/`：待建立音訊聽感與響度基準。
