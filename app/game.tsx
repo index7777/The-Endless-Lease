@@ -45,6 +45,7 @@ const WORLD_W = 1800;
 const WORLD_H = 900;
 const ROOM_W = 1600;
 const ELEVATOR_W = 1000;
+const ELEVATOR_CONTROL_X = 720;
 // Plaque anchors measured directly from scene-hallway-v1.png (1800 px source).
 const DOORS = [
   { slot: 1, x: 62, plaqueY: .325 }, { slot: 2, x: 246, plaqueY: .337 }, { slot: 3, x: 448, plaqueY: .337 },
@@ -53,7 +54,7 @@ const DOORS = [
 ];
 const HALLWAY_ELEVATOR_X = 1685;
 const groundBand = (height: number, place: Location) => place === "elevator"
-  ? { top: height * .69, bottom: height * .86 }
+  ? { top: height * .82, bottom: height * .94 }
   : place === "room"
     ? { top: height * .61, bottom: height * .84 }
     : { top: height * .64, bottom: height * .86 };
@@ -1167,7 +1168,7 @@ export default function Game() {
       return;
     }
     const activeEvent = ROOMS.find(room => room.slot === activeRoom);
-    const interactionX = location === "elevator" ? 824 : location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot ? ROOM_W * .72 : activeEvent?.id === 2 ? ROOM_W * .26 : ROOM_W * .79;
+    const interactionX = location === "elevator" ? ELEVATOR_CONTROL_X : location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot ? ROOM_W * .72 : activeEvent?.id === 2 ? ROOM_W * .26 : ROOM_W * .79;
     if (Math.abs(g.player.x - interactionX) < (location === "elevator" ? 92 : 95)) {
       keys.current = {};
       if (location === "elevator") {
@@ -1296,7 +1297,7 @@ export default function Game() {
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       const localWorldWidth = location === "hallway" ? WORLD_W : location === "elevator" ? ELEVATOR_W : ROOM_W;
       const current = game.current;
-      current.player.x = clamp(current.player.x, location === "room" ? 108 : location === "elevator" ? 128 : 55, location === "elevator" ? 812 : localWorldWidth - 55);
+      current.player.x = clamp(current.player.x, location === "room" ? 108 : location === "elevator" ? 264 : 55, location === "elevator" ? 756 : localWorldWidth - 55);
       current.player.y = probeGround(location, current.player.x, localWorldWidth, logicalHeight, current.player.y).y;
       for (const enemy of current.enemies) if (enemy.location === location) enemy.y = probeGround(location, enemy.x, localWorldWidth, logicalHeight, enemy.y).y;
       for (const pickup of current.pickups) pickup.y = probeGround(location, pickup.x, localWorldWidth, logicalHeight, pickup.y).y;
@@ -1327,8 +1328,8 @@ export default function Game() {
         const len = Math.hypot(dx, dy) || 1;
         const sprint = keys.current[controls.sprint] && p.stamina > 0 ? 1.55 : 1;
         const moveSpeed = 150 + destiny.attributes[1] * 15;
-        const minPlayerX = location === "room" ? 84 : location === "elevator" ? 128 : 55;
-        const maxPlayerX = location === "elevator" ? 812 : localWorldWidth - 55;
+        const minPlayerX = location === "room" ? 84 : location === "elevator" ? 264 : 55;
+        const maxPlayerX = location === "elevator" ? 756 : localWorldWidth - 55;
         const candidateX = clamp(p.x + (dx / len) * moveSpeed * sprint * dt, minPlayerX, maxPlayerX);
         const candidateY = clamp(p.y + (dy / len) * moveSpeed * .72 * sprint * dt, band.top, band.bottom);
         const roomProfile = activeRoom === -99 ? "management" : ROOMS.find(room => room.slot === activeRoom)?.id === 2 ? "clinic" : "home";
@@ -1344,7 +1345,7 @@ export default function Game() {
           if (item.y < band.top || item.y > band.bottom) item.y = band.top + 35 + ((item.x * .29) % Math.max(30, band.bottom - band.top - 48));
         }
         const activeEvent = ROOMS.find(room => room.slot === activeRoom);
-        const interactionX = location === "elevator" ? 824 : activeEvent?.id === 2 ? ROOM_W * .26 : location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot ? ROOM_W * .72 : ROOM_W * .79;
+        const interactionX = location === "elevator" ? ELEVATOR_CONTROL_X : activeEvent?.id === 2 ? ROOM_W * .26 : location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot ? ROOM_W * .72 : ROOM_W * .79;
         if ((roomEvent !== null || floorSelect || storageOpen) && Math.abs(p.x - interactionX) > (location === "elevator" ? 82 : 120)) {
           keys.current = {};
           dispatchFlow({ type: "CLOSE_OVERLAY" });

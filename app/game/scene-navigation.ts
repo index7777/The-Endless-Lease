@@ -17,7 +17,7 @@ export const SCENE_SPAWNS: Record<Location, readonly SceneSpawn[]> = {
     { id: "default", x: .5, facing: 1, safeRadius: .05 },
   ],
   elevator: [
-    { id: "from_hallway", x: .25, facing: 1, safeRadius: .06 },
+    { id: "from_hallway", x: .28, facing: 1, safeRadius: .06 },
     { id: "default", x: .5, facing: 1, safeRadius: .06 },
   ],
 };
@@ -71,7 +71,7 @@ export const CLINIC_COLLIDERS: readonly CollisionRect[] = [
 export function isWalkable(location: Location, x: number, y: number, worldWidth: number, viewportHeight: number, radius = 24, roomProfile: RoomCollisionProfile = "home") {
   const ground = probeGround(location, x, worldWidth, viewportHeight);
   if (Math.abs(y - ground.y) > viewportHeight * .12) return false;
-  if (location === "elevator") return x - radius >= worldWidth * .11 && x + radius <= worldWidth * .84;
+  if (location === "elevator") return x - radius >= worldWidth * .24 && x + radius <= worldWidth * .78;
   if (location !== "room") return true;
   if (x - radius < worldWidth * .06) return false;
   const colliders = roomProfile === "clinic" ? CLINIC_COLLIDERS : roomProfile === "management" ? [] : ROOM_COLLIDERS;
@@ -84,7 +84,7 @@ export function validateSceneNavigation() {
     for (const spawn of spawns) {
       if (ids.has(spawn.id)) throw new Error(`${scene} 入口 ID 重複：${spawn.id}`);
       ids.add(spawn.id);
-      const width = scene === "hallway" ? 1800 : scene === "elevator" ? 420 : 1000;
+      const width = scene === "hallway" ? 1800 : scene === "elevator" ? 1000 : 1000;
       const resolved = resolveSpawn(scene as Location, spawn.id, width, 900);
       if (!resolved.ground.grounded) throw new Error(`${scene}.${spawn.id} 下方沒有地面`);
       if (!isWalkable(scene as Location, resolved.ground.x, resolved.ground.y, width, 900)) throw new Error(`${scene}.${spawn.id} 與碰撞區重疊`);

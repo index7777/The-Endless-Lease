@@ -19,7 +19,7 @@ export const TIME_PERIOD_PROFILES: Record<TimePeriod, { exposure: number; cold: 
 export const SCENE_PRESENTATION = {
   hallway: { profile: "hallway_fluorescent", lights: [.22, .51, .82], wetReflection: .34, characterExposure: .96, characterScale: 1 },
   room: { profile: "resident_tungsten_fluorescent", lights: [.55], wetReflection: .12, characterExposure: .9, characterScale: 1.56 },
-  elevator: { profile: "elevator_cold_metal", lights: [.5], wetReflection: .27, characterExposure: .92, characterScale: .98 },
+  elevator: { profile: "elevator_cold_metal", lights: [.5], wetReflection: .27, characterExposure: .92, characterScale: 2.1 },
 } satisfies Record<Location, { profile: string; lights: number[]; wetReflection: number; characterExposure: number; characterScale: number }>;
 
 export const UI_THEME = {

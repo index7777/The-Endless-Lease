@@ -50,10 +50,21 @@ test("keeps room, clinic and elevator movement inside world collision profiles",
   assert.match(navigation, /worldWidth \* \.06/);
   assert.match(navigation, /clinic_privacy_screen.*x1: \.41/);
   assert.match(game, /g\.player\.x <= 330/);
-  assert.match(game, /location === "elevator" \? 128/);
-  assert.match(game, /location === "elevator" \? 812/);
+  assert.match(game, /location === "elevator" \? 264/);
+  assert.match(game, /location === "elevator" \? 756/);
+  assert.match(game, /height \* \.82, bottom: height \* \.94/);
+  assert.match(css, /\.desktop-game-stage/);
   assert.match(game, /resolveSpawn\("elevator", "from_hallway", ELEVATOR_W/);
+  assert.match(game, /const ELEVATOR_CONTROL_X = 720/);
+  assert.doesNotMatch(game, /location === "elevator" \? 824/);
   assert.doesNotMatch(game, /g\.player\.x = 105; g\.player\.y = 690/);
+});
+
+test("keeps elevator characters on the visible floor at the calibrated cabin scale", () => {
+  assert.match(game, /SCENE_PRESENTATION\[location\]\.characterScale/);
+  assert.match(navigation, /worldWidth \* \.24/);
+  assert.match(navigation, /worldWidth \* \.78/);
+  assert.match(navigation, /from_hallway", x: \.28/);
 });
 
 test("keeps the game desktop-only and scales the complete stage proportionally", () => {
