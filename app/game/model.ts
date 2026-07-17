@@ -31,6 +31,7 @@ export type Enemy = {
   stuckSeconds?: number;
   moving?: boolean;
   facing?: -1 | 1;
+  emerging?: boolean;
 };
 
 export type DebtEntry = {

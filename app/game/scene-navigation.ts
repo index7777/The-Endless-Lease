@@ -24,7 +24,10 @@ export const SCENE_SPAWNS: Record<Location, readonly SceneSpawn[]> = {
 
 const ROOM_GROUND: readonly [number, number][] = [[0, .89], [.18, .86], [.5, .845], [.82, .86], [1, .89]];
 const HALL_GROUND: readonly [number, number][] = [[0, .82], [.5, .81], [1, .82]];
-const ELEVATOR_GROUND: readonly [number, number][] = [[0, .84], [1, .84]];
+export const ELEVATOR_FLOOR_MIN_Y = .88;
+export const ELEVATOR_GROUND_Y = .90;
+export const ELEVATOR_FLOOR_MAX_Y = .94;
+const ELEVATOR_GROUND: readonly [number, number][] = [[0, ELEVATOR_GROUND_Y], [1, ELEVATOR_GROUND_Y]];
 
 const sampleLine = (points: readonly [number, number][], x: number) => {
   const normalized = Math.max(0, Math.min(1, x));
@@ -71,9 +74,15 @@ export const CLINIC_COLLIDERS: readonly CollisionRect[] = [
 export function isWalkable(location: Location, x: number, y: number, worldWidth: number, viewportHeight: number, radius = 24, roomProfile: RoomCollisionProfile = "home") {
   const ground = probeGround(location, x, worldWidth, viewportHeight);
   if (Math.abs(y - ground.y) > viewportHeight * .12) return false;
-  if (location === "elevator") return x - radius >= worldWidth * .24 && x + radius <= worldWidth * .78;
+  if (location === "elevator") {
+    const feetOnFloor = y >= viewportHeight * ELEVATOR_FLOOR_MIN_Y && y <= viewportHeight * ELEVATOR_FLOOR_MAX_Y;
+    return feetOnFloor && x - radius >= worldWidth * .24 && x + radius <= worldWidth * .78;
+  }
   if (location !== "room") return true;
   if (x - radius < worldWidth * .06) return false;
+  // The room entrance and its background cabinet/stair silhouette share one visual area.
+  // Keep a continuous horizontal exit lane so walking right never wedges the player there.
+  if (x + radius <= worldWidth * .40) return true;
   const colliders = roomProfile === "clinic" ? CLINIC_COLLIDERS : roomProfile === "management" ? [] : ROOM_COLLIDERS;
   return !colliders.some(rect => x + radius > rect.x1 * worldWidth && x - radius < rect.x2 * worldWidth && y > rect.y1 * viewportHeight && y - 8 < rect.y2 * viewportHeight);
 }

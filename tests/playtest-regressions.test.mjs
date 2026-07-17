@@ -48,16 +48,20 @@ test("keeps room, clinic and elevator movement inside world collision profiles",
   assert.match(navigation, /RoomCollisionProfile = "home" \| "clinic" \| "management"/);
   assert.match(navigation, /CLINIC_COLLIDERS/);
   assert.match(navigation, /worldWidth \* \.06/);
+  assert.match(navigation, /x \+ radius <= worldWidth \* \.40/);
   assert.match(navigation, /clinic_privacy_screen.*x1: \.41/);
   assert.match(game, /g\.player\.x <= 330/);
   assert.match(game, /location === "elevator" \? 264/);
   assert.match(game, /location === "elevator" \? 756/);
-  assert.match(game, /height \* \.82, bottom: height \* \.94/);
+  assert.match(game, /height \* ELEVATOR_FLOOR_MIN_Y, bottom: height \* ELEVATOR_FLOOR_MAX_Y/);
+  assert.match(navigation, /ELEVATOR_FLOOR_MIN_Y = \.88/);
+  assert.match(navigation, /ELEVATOR_GROUND_Y = \.90/);
   assert.match(css, /\.desktop-game-stage/);
   assert.match(game, /resolveSpawn\("elevator", "from_hallway", ELEVATOR_W/);
   assert.match(game, /const ELEVATOR_CONTROL_X = 720/);
   assert.doesNotMatch(game, /location === "elevator" \? 824/);
   assert.doesNotMatch(game, /g\.player\.x = 105; g\.player\.y = 690/);
+  assert.match(game, /else if \(Math\.abs\(dx\) > \.1 && isWalkable/);
 });
 
 test("keeps elevator characters on the visible floor at the calibrated cabin scale", () => {
@@ -94,6 +98,26 @@ test("drains sprint stamina only when the player actually moves", () => {
   assert.doesNotMatch(game, /p\.stamina = clamp\(p\.stamina \+ \(sprint > 1 \? -30/);
 });
 
+test("restarts a dead resident from a blank registration without the previous canvas", () => {
+  assert.match(game, /const \[registrationGender, setRegistrationGender\] = useState<Destiny\["gender"\] \| null>\(null\)/);
+  assert.match(game, /disabled=\{!residentName\.trim\(\) \|\| registrationGender === null\}/);
+  assert.match(game, /onClick=\{restartRegistration\}/);
+  assert.match(css, /\.game-shell\.is-menu \.game-canvas,.game-shell\.is-menu \.film\{visibility:hidden\}/);
+});
+
+test("keeps the corpse still while living enemies approach without attacking", () => {
+  assert.match(game, /p\.hp = 0; p\.invuln = 0; p\.attack = 0/);
+  assert.match(game, /flow\.screen === "dead" && g\.dead/);
+  assert.match(game, /e\.attackTimer = 0/);
+  assert.match(game, /corpseDistance <= 62/);
+});
+
+test("offers restart and exit actions on the death menu", () => {
+  assert.match(game, /className="death-menu"/);
+  assert.match(game, />重新入住<\/button>/);
+  assert.match(game, />離開遊戲<\/button>/);
+});
+
 test("keeps patrol-light invisibility visual-only and disables it on death", () => {
   assert.match(game, /ordinaryKinds = isPatrolLightPeriod\(secondsRemaining\)/);
   assert.match(game, /roomEvent === 1 && choice === 1 && isPatrolLightPeriod\(g\.time\)/);
@@ -114,6 +138,20 @@ test("keeps living pursuers when a new wave or boss encounter begins", () => {
   assert.match(game, /const persistentPursuers = g\.enemies\.filter\(enemy => enemy\.hp > 0 && enemy\.kind === "pursuer"\)/);
   assert.match(game, /kind: boss \}, \.\.\.persistentPursuers/);
   assert.doesNotMatch(game, /Math\.min\(4, 1 \+ Math\.floor/);
+});
+
+test("lets rent pursuers cross furniture and follow every player scene transition", () => {
+  assert.match(game, /const isPursuer = e\.kind === "pursuer"/);
+  assert.match(game, /const next = isPursuer[\s\S]*clamp\(e\.x \+ dx/);
+  assert.match(game, /enemy\.kind === "pursuer" \|\| Math\.abs\(enemy\.x - doorX\) < 430/);
+  assert.match(game, /enemy\.kind === "pursuer" \|\| enemy\.x > 1320/);
+});
+
+test("lets wall residents emerge continuously instead of teleporting out of collisions", () => {
+  assert.match(game, /e\.emerging = true/);
+  assert.match(game, /const wallEmerging = e\.kind === "wall" && e\.emerging/);
+  assert.match(game, /fullyInCorridor && hasLegalClearance/);
+  assert.match(game, /e\.kind !== "wall" \|\| !e\.emerging/);
 });
 
 test("keeps management independent and preserves the terminal ending", () => {

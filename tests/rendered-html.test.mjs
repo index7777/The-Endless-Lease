@@ -56,7 +56,8 @@ test("ships the demo scene and character assets", async () => {
   assert.match(game, /接受資格審查/);
   assert.match(game, /擲出結果/);
   assert.match(game, /HONG_YI_LINES\.registrationComplete/);
-  assert.match(game, /setFilingStage\("ready"\); dispatchFlow\(\{ type: "RESTART" \}\)/);
+  assert.match(game, /const restartRegistration = useCallback/);
+  assert.match(game, /onClick=\{restartRegistration\}/);
   assert.match(globals, /\.elevator-console\s*\{[^}]*pointer-events\s*:\s*auto|\.settlement-paper[^}]*\.elevator-console\s*\{\s*pointer-events\s*:\s*auto/);
   assert.doesNotMatch(game, /NT\$/);
   assert.doesNotMatch(game, /_sites-preview|SkeletonPreview/);

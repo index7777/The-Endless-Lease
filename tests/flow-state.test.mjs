@@ -22,13 +22,19 @@ test("follows the only valid entry and restart path", () => {
   assert.equal(run.screen, "run");
   const dead = gameFlowReducer(run, { type: "DIE" });
   assert.deepEqual(gameFlowReducer(dead, { type: "RESTART" }), {
-    screen: "destiny", paused: false, overlay: { kind: "none" },
+    screen: "intro", paused: false, overlay: { kind: "none" },
   });
 });
 
 test("rejects out-of-order screen transitions", () => {
   assert.equal(gameFlowReducer(INITIAL_GAME_FLOW, { type: "START_RUN" }), INITIAL_GAME_FLOW);
   assert.equal(gameFlowReducer(INITIAL_GAME_FLOW, { type: "OPEN_DESTINY" }), INITIAL_GAME_FLOW);
+});
+
+test("allows leaving to title from the death menu", () => {
+  const run = reduce(INITIAL_GAME_FLOW, { type: "OPEN_INTRO" }, { type: "OPEN_DESTINY" }, { type: "START_RUN" });
+  const dead = gameFlowReducer(run, { type: "DIE" });
+  assert.deepEqual(gameFlowReducer(dead, { type: "EXIT_TO_TITLE" }), INITIAL_GAME_FLOW);
 });
 
 test("returns from destiny to the residency registration form", () => {
@@ -65,7 +71,7 @@ test("completes the demo only from a live run and can start a new resident", () 
   const complete = gameFlowReducer(run, { type: "COMPLETE_DEMO" });
   assert.deepEqual(complete, { screen: "complete", paused: false, overlay: { kind: "none" } });
   assert.deepEqual(gameFlowReducer(complete, { type: "RESTART" }), {
-    screen: "destiny", paused: false, overlay: { kind: "none" },
+    screen: "intro", paused: false, overlay: { kind: "none" },
   });
   assert.deepEqual(gameFlowReducer(complete, { type: "RETURN_TITLE" }), INITIAL_GAME_FLOW);
   assert.equal(gameFlowReducer(run, { type: "RETURN_TITLE" }), run);

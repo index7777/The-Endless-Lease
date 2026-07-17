@@ -61,8 +61,8 @@ export function gameFlowReducer(state: GameFlowState, action: GameFlowAction): G
     case "RETURN_TITLE":
       return state.screen === "complete" ? INITIAL_GAME_FLOW : state;
     case "EXIT_TO_TITLE":
-      return state.screen === "run" ? INITIAL_GAME_FLOW : state;
+      return state.screen === "run" || state.screen === "dead" ? INITIAL_GAME_FLOW : state;
     case "RESTART":
-      return state.screen === "dead" || state.screen === "complete" ? { screen: "destiny", paused: false, overlay: { kind: "none" } } : state;
+      return state.screen === "dead" || state.screen === "complete" ? { screen: "intro", paused: false, overlay: { kind: "none" } } : state;
   }
 }
