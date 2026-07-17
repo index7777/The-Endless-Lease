@@ -78,6 +78,42 @@ try {
     await page.getByRole("button", { name: /確認建檔結果/ }).click();
     await page.locator(".filing-complete").waitFor();
     await page.screenshot({ path: resolve(directory, "t22-archive-complete.png") });
+
+    await page.getByRole("button", { name: /進入 \d+/ }).click();
+    await page.locator(".topbar").waitFor({ timeout: 30000 });
+    await page.waitForTimeout(1200);
+    await page.screenshot({ path: resolve(directory, "t23-gameplay-ground-shadow.png") });
+
+    await page.keyboard.down("d");
+    await page.waitForTimeout(3000);
+    await page.keyboard.up("d");
+    const storage = page.locator(".storage-screen");
+    let storageOpened = false;
+    for (let attempt = 0; attempt < 8 && !storageOpened; attempt++) {
+      await page.keyboard.press("e");
+      storageOpened = await storage.waitFor({ state: "visible", timeout: 450 }).then(() => true).catch(() => false);
+      if (!storageOpened) {
+        await page.keyboard.down("a");
+        await page.waitForTimeout(300);
+        await page.keyboard.up("a");
+      }
+    }
+    if (storageOpened) {
+      await page.screenshot({ path: resolve(directory, "t25-storage-cabinet.png") });
+      await page.getByRole("button", { name: "關閉櫃門" }).click();
+    }
+
+    await page.getByRole("button", { name: "住戶檔案", exact: true }).click();
+    await page.locator(".resident-profile").waitFor();
+    await page.screenshot({ path: resolve(directory, "t53-t54-resident-profile-backpack.png") });
+    await page.getByRole("button", { name: "收回檔案" }).click();
+
+    await page.getByRole("button", { name: "暫停", exact: true }).click();
+    await page.locator(".pause-menu").waitFor();
+    await page.screenshot({ path: resolve(directory, "t28-pause-management-document.png") });
+    await page.getByRole("button", { name: "存檔管理" }).click();
+    await page.locator(".save-ledger").waitFor();
+    await page.screenshot({ path: resolve(directory, "t44-save-ledger.png") });
     await context.close();
   }
 } finally {

@@ -15,10 +15,10 @@ test("keeps the complete B2 ending state sequence data-driven", () => {
   assert.match(source, /EN TRANSLATION PENDING REVIEW/);
 });
 
-test("unlocks the sixth-floor management office after collecting the B2 keycard", () => {
+test("keeps the management office independent from numbered floors", () => {
   assert.equal(canAccessDemoFloor(6, 1, "B2_ALIVE"), false);
-  assert.equal(canAccessDemoFloor(6, 1, "KEYCARD_COLLECTED"), true);
-  assert.equal(canAccessDemoFloor(6, 1, "CLEARANCE_REPORT_VIEWED"), true);
+  assert.equal(canAccessDemoFloor(6, 1, "KEYCARD_COLLECTED"), false);
+  assert.equal(canAccessDemoFloor(6, 1, "CLEARANCE_REPORT_VIEWED"), false);
   assert.equal(canAccessDemoFloor(7, 1, "CLEARANCE_REPORT_VIEWED"), false);
 });
 

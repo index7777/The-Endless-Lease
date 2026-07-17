@@ -20,7 +20,7 @@ export function advanceDemoEnding(current: DemoEndingState, next: DemoEndingStat
 }
 
 export function canAccessDemoFloor(floor: number, boundFloor: number, endingState: DemoEndingState) {
-  if (floor === 6 && !["B2_ALIVE", "B2_DEFEATED", "KEYCARD_DROPPED"].includes(endingState)) return true;
+  void endingState;
   return floor <= Math.min(9, boundFloor + 3);
 }
 
@@ -38,7 +38,7 @@ export const DEMO_ENDING_ZH_TW = {
   "demo.b2.clearance.hongyi_message": "做得不錯。你清掉的是地下室，不是這棟樓。",
   "demo.b2.clearance.reward_keycard": "特殊權限卡 ×1",
   "demo.return_office.title": "帶回權限卡",
-  "demo.return_office.description": "返回六樓管理室，將特殊權限卡交給紅怡。",
+  "demo.return_office.description": "在電梯控制盤選擇獨立的管理室按鈕，將特殊權限卡交給紅怡。",
   "demo.elevator.floor10.first_interaction": "現在還不能上去。\n把卡帶回來。\n我要先確認十樓為什麼認得你。",
   "demo.elevator.floor10.repeat_interaction": "我說過，先回管理室。",
   "demo.hongyi.keycard.intro": "門關上。\n卡放在櫃檯上。不要讓它碰到住戶名冊。",

@@ -14,6 +14,7 @@
     "validate:animation": "node tools/validate-character-animation.mjs",
     "validate:animation:strict": "node tools/validate-character-animation.mjs --strict-candidates",
     "task:check": "node scripts/validate-active-task.mjs",
+    "visual:capture": "node scripts/capture-t14-t21.mjs",
     "precommit:project": "npm run task:check && npm test",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
     "db:generate": "drizzle-kit generate"

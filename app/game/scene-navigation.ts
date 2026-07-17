@@ -4,6 +4,7 @@ export type SpawnId = "from_hallway" | "from_room" | "from_elevator" | "default"
 export type SceneSpawn = { id: SpawnId; x: number; facing: -1 | 1; safeRadius: number };
 export type GroundHit = { grounded: boolean; x: number; y: number; normal: { x: number; y: number }; collider: string; distance: number };
 export type CollisionRect = { id: string; x1: number; x2: number; y1: number; y2: number };
+export type RoomCollisionProfile = "home" | "clinic" | "management";
 
 export const SCENE_SPAWNS: Record<Location, readonly SceneSpawn[]> = {
   hallway: [
@@ -58,11 +59,22 @@ export const ROOM_COLLIDERS: readonly CollisionRect[] = [
   { id: "wardrobe", x1: .75, x2: .91, y1: .33, y2: .79 },
 ];
 
-export function isWalkable(location: Location, x: number, y: number, worldWidth: number, viewportHeight: number, radius = 24) {
+export const CLINIC_COLLIDERS: readonly CollisionRect[] = [
+  { id: "clinic_privacy_screen", x1: .08, x2: .15, y1: .33, y2: .88 },
+  { id: "clinic_treatment_table", x1: .30, x2: .61, y1: .49, y2: .88 },
+  { id: "clinic_trolley", x1: .58, x2: .68, y1: .56, y2: .88 },
+  { id: "clinic_desk", x1: .66, x2: .80, y1: .55, y2: .88 },
+  { id: "clinic_cabinet", x1: .79, x2: .94, y1: .30, y2: .88 },
+];
+
+export function isWalkable(location: Location, x: number, y: number, worldWidth: number, viewportHeight: number, radius = 24, roomProfile: RoomCollisionProfile = "home") {
   const ground = probeGround(location, x, worldWidth, viewportHeight);
   if (Math.abs(y - ground.y) > viewportHeight * .12) return false;
+  if (location === "elevator") return x - radius >= worldWidth * .11 && x + radius <= worldWidth * .84;
   if (location !== "room") return true;
-  return !ROOM_COLLIDERS.some(rect => x + radius > rect.x1 * worldWidth && x - radius < rect.x2 * worldWidth && y > rect.y1 * viewportHeight && y - 8 < rect.y2 * viewportHeight);
+  if (x - radius < worldWidth * .085) return false;
+  const colliders = roomProfile === "clinic" ? CLINIC_COLLIDERS : roomProfile === "management" ? [] : ROOM_COLLIDERS;
+  return !colliders.some(rect => x + radius > rect.x1 * worldWidth && x - radius < rect.x2 * worldWidth && y > rect.y1 * viewportHeight && y - 8 < rect.y2 * viewportHeight);
 }
 
 export function validateSceneNavigation() {
@@ -78,7 +90,7 @@ export function validateSceneNavigation() {
     }
   }
   const roomSpawn = resolveSpawn("room", "from_hallway", 1000, 900).ground;
-  for (let x = roomSpawn.x; x >= 80; x -= 10) {
+  for (let x = roomSpawn.x; x >= 110; x -= 10) {
     if (!isWalkable("room", x, probeGround("room", x, 1000, 900).y, 1000, 900)) throw new Error(`房門出口路徑在 x=${x} 被阻擋`);
   }
   for (let x = roomSpawn.x; x <= 720; x += 10) {

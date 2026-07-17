@@ -23,6 +23,7 @@ export type GameFlowAction =
   | { type: "DIE" }
   | { type: "COMPLETE_DEMO" }
   | { type: "RETURN_TITLE" }
+  | { type: "EXIT_TO_TITLE" }
   | { type: "RESTART" };
 
 export const INITIAL_GAME_FLOW: GameFlowState = {
@@ -59,6 +60,8 @@ export function gameFlowReducer(state: GameFlowState, action: GameFlowAction): G
       return state.screen === "run" ? { screen: "complete", paused: false, overlay: { kind: "none" } } : state;
     case "RETURN_TITLE":
       return state.screen === "complete" ? INITIAL_GAME_FLOW : state;
+    case "EXIT_TO_TITLE":
+      return state.screen === "run" ? INITIAL_GAME_FLOW : state;
     case "RESTART":
       return state.screen === "dead" || state.screen === "complete" ? { screen: "destiny", paused: false, overlay: { kind: "none" } } : state;
   }

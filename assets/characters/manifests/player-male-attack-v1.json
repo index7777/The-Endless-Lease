@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 1,
+  "character": "player-male",
+  "state": "attack",
+  "status": "candidate",
+  "fps": 24,
+  "loop": false,
+  "frameCount": 16,
+  "frameSize": {
+    "width": 512,
+    "height": 384
+  },
+  "groundLine": 372,
+  "pivot": "feet_center",
+  "source": "work/animation-sources/player-male/attack-contact-sheet-v1-chroma.png",
+  "frames": [
+    {
+      "index": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 40.599,
+      "brightnessCorrection": 1.1593
+    },
+    {
+      "index": 1,
+      "rect": {
+        "x": 512,
+        "y": 0,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 43.38,
+      "brightnessCorrection": 1.085
+    },
+    {
+      "index": 2,
+      "rect": {
+        "x": 1024,
+        "y": 0,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 43.793,
+      "brightnessCorrection": 1.0748
+    },
+    {
+      "index": 3,
+      "rect": {
+        "x": 1536,
+        "y": 0,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 47.682,
+      "brightnessCorrection": 0.9871
+    },
+    {
+      "index": 4,
+      "rect": {
+        "x": 0,
+        "y": 384,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 46.919,
+      "brightnessCorrection": 1.0032
+    },
+    {
+      "index": 5,
+      "rect": {
+        "x": 512,
+        "y": 384,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 47.068,
+      "brightnessCorrection": 1.0
+    },
+    {
+      "index": 6,
+      "rect": {
+        "x": 1024,
+        "y": 384,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 47.358,
+      "brightnessCorrection": 0.9939
+    },
+    {
+      "index": 7,
+      "rect": {
+        "x": 1536,
+        "y": 384,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 46.715,
+      "brightnessCorrection": 1.0076
+    },
+    {
+      "index": 8,
+      "rect": {
+        "x": 0,
+        "y": 768,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 48.43,
+      "brightnessCorrection": 0.9719
+    },
+    {
+      "index": 9,
+      "rect": {
+        "x": 512,
+        "y": 768,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 49.091,
+      "brightnessCorrection": 0.9588
+    },
+    {
+      "index": 10,
+      "rect": {
+        "x": 1024,
+        "y": 768,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 51.199,
+      "brightnessCorrection": 0.9193
+    },
+    {
+      "index": 11,
+      "rect": {
+        "x": 1536,
+        "y": 768,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 46.119,
+      "brightnessCorrection": 1.0206
+    },
+    {
+      "index": 12,
+      "rect": {
+        "x": 0,
+        "y": 1152,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 51.195,
+      "brightnessCorrection": 0.9194
+    },
+    {
+      "index": 13,
+      "rect": {
+        "x": 512,
+        "y": 1152,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 47.925,
+      "brightnessCorrection": 0.9821
+    },
+    {
+      "index": 14,
+      "rect": {
+        "x": 1024,
+        "y": 1152,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 42.22,
+      "brightnessCorrection": 1.1148
+    },
+    {
+      "index": 15,
+      "rect": {
+        "x": 1536,
+        "y": 1152,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 42.238,
+      "brightnessCorrection": 1.1144
+    }
+  ]
+}

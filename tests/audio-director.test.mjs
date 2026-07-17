@@ -9,7 +9,7 @@ test("ships and maps all nine Hong-Yi voice recordings", async () => {
   ]);
   assert.deepEqual(files.sort(), Array.from({ length: 9 }, (_, index) => `demo${String(index).padStart(2, "0")}.mp3`));
   for (const number of [0, 1, 2]) assert.match(game, new RegExp(`playVoice\\(${number}`));
-  assert.match(game, /playVoice\(firstAttempt \? 3 : 4\)/);
+  assert.match(game, /playVoice\(firstAttempt \? 3 : 4(?:,|\))/);
   assert.match(game, /playVoice\(5 \+ managementDialogueStep\)/);
   assert.doesNotMatch(game, /SpeechSynthesisUtterance|speechSynthesis\.speak/);
 });

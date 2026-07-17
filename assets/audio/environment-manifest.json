@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-07-17",
+  "generator": "scripts/generate-environment-audio.py",
+  "license": "Project-original procedural audio; no third-party recording or music sample used",
+  "policy": "Environmental soundscape only; no melody, rhythm, choir, vocal or trailer layer",
+  "assets": [
+    { "path": "public/audio/ambience/floor-common-v1.wav", "scene": "一般樓層", "layers": ["日光燈電流", "遠方管線", "低頻建物共振"] },
+    { "path": "public/audio/ambience/b1-machinery-v1.wav", "scene": "B1", "layers": ["低頻機械", "滴水", "地下通風"] },
+    { "path": "public/audio/ambience/b2-records-v1.wav", "scene": "B2", "layers": ["紙張摩擦", "檔案庫通風", "低頻建物共振"] },
+    { "path": "public/audio/ambience/elevator-cabin-v1.wav", "scene": "電梯", "layers": ["馬達低鳴", "繼電器", "金屬轎廂共振"] },
+    { "path": "public/audio/ambience/management-office-v1.wav", "scene": "管理室", "layers": ["掛鐘", "室內電流", "遠距紙張聲"] }
+  ]
+}

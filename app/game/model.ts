@@ -17,6 +17,10 @@ export type Enemy = {
   attackCooldown?: number;
   attackLanded?: boolean;
   combatSeen?: boolean;
+  hitTimer?: number;
+  deathTimer?: number;
+  deathDuration?: number;
+  rewardGranted?: boolean;
 };
 
 export type DebtEntry = {

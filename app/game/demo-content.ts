@@ -32,7 +32,7 @@ export const DEFECT_DESCRIPTIONS: Record<string, string> = {
 
 export const DEMO_ROOMS = [
   {
-    id: 0, slot: 2, x: 305, title: "滲水租屋房",
+    id: 0, slot: 2, x: 305, title: "滲水牆面",
     description: "牆壁滲出溫濕水跡。那不是漏水，而是牆體內部滲出的透明軟質液體；地面散落數張未繳的舊租單。",
     choices: ["撿起舊租單", "擦拭牆面滲液", "直接離開房間"],
   },
@@ -42,9 +42,9 @@ export const DEMO_ROOMS = [
     choices: ["駐足聆聽", "敲擊牆面回應", "快速遠離"],
   },
   {
-    id: 2, slot: 8, x: 1425, title: "遺留住戶房",
-    description: "房間整潔卻佈滿灰塵，生活用品仍在原位。桌上攤著一本寫滿欠租記錄的筆記，主人像剛剛突然消失。",
-    choices: ["翻閱欠租筆記", "搜刮房間物資", "默立片刻後離開"],
+    id: 2, slot: 8, x: 1425, title: "住戶診療台",
+    description: "診療台的皮面已龜裂，束帶卻仍帶著餘溫。器械盤下壓著一張住戶檢查紀錄，最後一欄只寫著：人形資格待複核。",
+    choices: ["翻閱診療紀錄", "檢查器械盤", "不碰觸並離開"],
   },
 ];
 

@@ -1,0 +1,274 @@
+{
+  "schemaVersion": 1,
+  "character": "player-female",
+  "state": "walk",
+  "status": "candidate",
+  "fps": 24,
+  "loop": true,
+  "frameCount": 16,
+  "frameSize": {
+    "width": 512,
+    "height": 384
+  },
+  "groundLine": 372,
+  "pivot": "feet_center",
+  "source": "work/animation-sources/player-female/walk-contact-sheet-v1-chroma.png",
+  "frames": [
+    {
+      "index": 0,
+      "rect": {
+        "x": 0,
+        "y": 0,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 48.893,
+      "brightnessCorrection": 1.0041
+    },
+    {
+      "index": 1,
+      "rect": {
+        "x": 512,
+        "y": 0,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 49.566,
+      "brightnessCorrection": 0.9905
+    },
+    {
+      "index": 2,
+      "rect": {
+        "x": 1024,
+        "y": 0,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 50.565,
+      "brightnessCorrection": 0.9709
+    },
+    {
+      "index": 3,
+      "rect": {
+        "x": 1536,
+        "y": 0,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 48.375,
+      "brightnessCorrection": 1.0148
+    },
+    {
+      "index": 4,
+      "rect": {
+        "x": 0,
+        "y": 384,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 48.499,
+      "brightnessCorrection": 1.0123
+    },
+    {
+      "index": 5,
+      "rect": {
+        "x": 512,
+        "y": 384,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 48.698,
+      "brightnessCorrection": 1.0081
+    },
+    {
+      "index": 6,
+      "rect": {
+        "x": 1024,
+        "y": 384,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 49.093,
+      "brightnessCorrection": 1.0
+    },
+    {
+      "index": 7,
+      "rect": {
+        "x": 1536,
+        "y": 384,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 48.685,
+      "brightnessCorrection": 1.0084
+    },
+    {
+      "index": 8,
+      "rect": {
+        "x": 0,
+        "y": 768,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 48.805,
+      "brightnessCorrection": 1.0059
+    },
+    {
+      "index": 9,
+      "rect": {
+        "x": 512,
+        "y": 768,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 49.029,
+      "brightnessCorrection": 1.0013
+    },
+    {
+      "index": 10,
+      "rect": {
+        "x": 1024,
+        "y": 768,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 49.497,
+      "brightnessCorrection": 0.9918
+    },
+    {
+      "index": 11,
+      "rect": {
+        "x": 1536,
+        "y": 768,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 49.074,
+      "brightnessCorrection": 1.0004
+    },
+    {
+      "index": 12,
+      "rect": {
+        "x": 0,
+        "y": 1152,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 49.362,
+      "brightnessCorrection": 0.9946
+    },
+    {
+      "index": 13,
+      "rect": {
+        "x": 512,
+        "y": 1152,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 51.554,
+      "brightnessCorrection": 0.9523
+    },
+    {
+      "index": 14,
+      "rect": {
+        "x": 1024,
+        "y": 1152,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 50.212,
+      "brightnessCorrection": 0.9777
+    },
+    {
+      "index": 15,
+      "rect": {
+        "x": 1536,
+        "y": 1152,
+        "w": 512,
+        "h": 384
+      },
+      "pivot": {
+        "x": 0.5,
+        "y": 0.96875
+      },
+      "groundY": 372,
+      "sourceLuma": 49.38,
+      "brightnessCorrection": 0.9942
+    }
+  ]
+}

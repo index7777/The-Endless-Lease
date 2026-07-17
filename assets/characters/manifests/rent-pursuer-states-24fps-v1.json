@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "character": "rent-pursuer",
+  "status": "candidate",
+  "sourceType": "AI key poses normalized then OpenCV optical-flow interpolation",
+  "frameSize": {
+    "width": 512,
+    "height": 384
+  },
+  "sheet": {
+    "columns": 8,
+    "rows": 8
+  },
+  "groundLine": 372,
+  "pivot": "feet_center",
+  "states": {
+    "walk": {
+      "startFrame": 0,
+      "frameCount": 16,
+      "fps": 24,
+      "loop": true
+    },
+    "attack": {
+      "startFrame": 16,
+      "frameCount": 16,
+      "fps": 24,
+      "loop": false
+    },
+    "hit": {
+      "startFrame": 32,
+      "frameCount": 16,
+      "fps": 24,
+      "loop": false
+    },
+    "die": {
+      "startFrame": 48,
+      "frameCount": 16,
+      "fps": 24,
+      "loop": false
+    }
+  }
+}

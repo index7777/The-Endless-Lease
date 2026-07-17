@@ -1,10 +1,1100 @@
 {
   "validator": "The Endless Lease 2.5D Animation Validator",
   "version": "1.0",
-  "generatedAt": "2026-07-16T14:21:34.285Z",
+  "generatedAt": "2026-07-17T01:21:34.263Z",
   "finalResult": "Rejected",
   "policy": "AI 圖片只可作為 Animation Source；正式候選必須通過全部檢查",
-  "characters": [],
+  "characters": [
+    {
+      "characterId": "boss-b1-states-24fps-v1",
+      "characterType": "unknown",
+      "releaseCandidate": false,
+      "manifest": "assets/characters/manifests/boss-b1-states-24fps-v1.json",
+      "result": "Rejected",
+      "checks": [
+        {
+          "name": "固定成人顯示高度",
+          "status": "FAIL",
+          "detail": "目前 未填 px；基準 256 px"
+        },
+        {
+          "name": "腳底中心 Pivot",
+          "status": "FAIL",
+          "detail": "目前 feet_center"
+        },
+        {
+          "name": "groundLine",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "footLock",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "rootMotionChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "collisionBoxChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "統一引擎橢圓陰影",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Idle",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Walk",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Run",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Attack",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Hit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Die",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Interact",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Turn",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Sit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：OpenDoor",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：CloseDoor",
+          "status": "FAIL",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "characterId": "boss-b2-states-24fps-v1",
+      "characterType": "unknown",
+      "releaseCandidate": false,
+      "manifest": "assets/characters/manifests/boss-b2-states-24fps-v1.json",
+      "result": "Rejected",
+      "checks": [
+        {
+          "name": "固定成人顯示高度",
+          "status": "FAIL",
+          "detail": "目前 未填 px；基準 256 px"
+        },
+        {
+          "name": "腳底中心 Pivot",
+          "status": "FAIL",
+          "detail": "目前 feet_center"
+        },
+        {
+          "name": "groundLine",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "footLock",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "rootMotionChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "collisionBoxChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "統一引擎橢圓陰影",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Idle",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Walk",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Run",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Attack",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Hit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Die",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Interact",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Turn",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Sit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：OpenDoor",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：CloseDoor",
+          "status": "FAIL",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "characterId": "light-warden-states-24fps-v1",
+      "characterType": "unknown",
+      "releaseCandidate": false,
+      "manifest": "assets/characters/manifests/light-warden-states-24fps-v1.json",
+      "result": "Rejected",
+      "checks": [
+        {
+          "name": "固定成人顯示高度",
+          "status": "FAIL",
+          "detail": "目前 未填 px；基準 256 px"
+        },
+        {
+          "name": "腳底中心 Pivot",
+          "status": "FAIL",
+          "detail": "目前 feet_center"
+        },
+        {
+          "name": "groundLine",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "footLock",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "rootMotionChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "collisionBoxChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "統一引擎橢圓陰影",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Idle",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Walk",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Run",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Attack",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Hit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Die",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Interact",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Turn",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Sit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：OpenDoor",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：CloseDoor",
+          "status": "FAIL",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "characterId": "player-female-attack-v1",
+      "characterType": "unknown",
+      "releaseCandidate": false,
+      "manifest": "assets/characters/manifests/player-female-attack-v1.json",
+      "result": "Rejected",
+      "checks": [
+        {
+          "name": "固定成人顯示高度",
+          "status": "FAIL",
+          "detail": "目前 未填 px；基準 256 px"
+        },
+        {
+          "name": "腳底中心 Pivot",
+          "status": "FAIL",
+          "detail": "目前 feet_center"
+        },
+        {
+          "name": "groundLine",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "footLock",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "rootMotionChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "collisionBoxChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "統一引擎橢圓陰影",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Idle",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Walk",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Run",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Attack",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Hit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Die",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Interact",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Turn",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Sit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：OpenDoor",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：CloseDoor",
+          "status": "FAIL",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "characterId": "player-female-walk-v1",
+      "characterType": "unknown",
+      "releaseCandidate": false,
+      "manifest": "assets/characters/manifests/player-female-walk-v1.json",
+      "result": "Rejected",
+      "checks": [
+        {
+          "name": "固定成人顯示高度",
+          "status": "FAIL",
+          "detail": "目前 未填 px；基準 256 px"
+        },
+        {
+          "name": "腳底中心 Pivot",
+          "status": "FAIL",
+          "detail": "目前 feet_center"
+        },
+        {
+          "name": "groundLine",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "footLock",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "rootMotionChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "collisionBoxChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "統一引擎橢圓陰影",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Idle",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Walk",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Run",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Attack",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Hit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Die",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Interact",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Turn",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Sit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：OpenDoor",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：CloseDoor",
+          "status": "FAIL",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "characterId": "player-male-attack-v1",
+      "characterType": "unknown",
+      "releaseCandidate": false,
+      "manifest": "assets/characters/manifests/player-male-attack-v1.json",
+      "result": "Rejected",
+      "checks": [
+        {
+          "name": "固定成人顯示高度",
+          "status": "FAIL",
+          "detail": "目前 未填 px；基準 256 px"
+        },
+        {
+          "name": "腳底中心 Pivot",
+          "status": "FAIL",
+          "detail": "目前 feet_center"
+        },
+        {
+          "name": "groundLine",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "footLock",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "rootMotionChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "collisionBoxChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "統一引擎橢圓陰影",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Idle",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Walk",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Run",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Attack",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Hit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Die",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Interact",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Turn",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Sit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：OpenDoor",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：CloseDoor",
+          "status": "FAIL",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "characterId": "player-male-walk-v1",
+      "characterType": "unknown",
+      "releaseCandidate": false,
+      "manifest": "assets/characters/manifests/player-male-walk-v1.json",
+      "result": "Rejected",
+      "checks": [
+        {
+          "name": "固定成人顯示高度",
+          "status": "FAIL",
+          "detail": "目前 未填 px；基準 256 px"
+        },
+        {
+          "name": "腳底中心 Pivot",
+          "status": "FAIL",
+          "detail": "目前 feet_center"
+        },
+        {
+          "name": "groundLine",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "footLock",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "rootMotionChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "collisionBoxChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "統一引擎橢圓陰影",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Idle",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Walk",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Run",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Attack",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Hit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Die",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Interact",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Turn",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Sit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：OpenDoor",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：CloseDoor",
+          "status": "FAIL",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "characterId": "receipt-collector-states-24fps-v1",
+      "characterType": "unknown",
+      "releaseCandidate": false,
+      "manifest": "assets/characters/manifests/receipt-collector-states-24fps-v1.json",
+      "result": "Rejected",
+      "checks": [
+        {
+          "name": "固定成人顯示高度",
+          "status": "FAIL",
+          "detail": "目前 未填 px；基準 256 px"
+        },
+        {
+          "name": "腳底中心 Pivot",
+          "status": "FAIL",
+          "detail": "目前 feet_center"
+        },
+        {
+          "name": "groundLine",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "footLock",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "rootMotionChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "collisionBoxChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "統一引擎橢圓陰影",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Idle",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Walk",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Run",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Attack",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Hit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Die",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Interact",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Turn",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Sit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：OpenDoor",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：CloseDoor",
+          "status": "FAIL",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "characterId": "rent-pursuer-states-24fps-v1",
+      "characterType": "unknown",
+      "releaseCandidate": false,
+      "manifest": "assets/characters/manifests/rent-pursuer-states-24fps-v1.json",
+      "result": "Rejected",
+      "checks": [
+        {
+          "name": "固定成人顯示高度",
+          "status": "FAIL",
+          "detail": "目前 未填 px；基準 256 px"
+        },
+        {
+          "name": "腳底中心 Pivot",
+          "status": "FAIL",
+          "detail": "目前 feet_center"
+        },
+        {
+          "name": "groundLine",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "footLock",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "rootMotionChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "collisionBoxChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "統一引擎橢圓陰影",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Idle",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Walk",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Run",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Attack",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Hit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Die",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Interact",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Turn",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Sit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：OpenDoor",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：CloseDoor",
+          "status": "FAIL",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "characterId": "wall-resident-hit-die-v1",
+      "characterType": "unknown",
+      "releaseCandidate": false,
+      "manifest": "assets/characters/manifests/wall-resident-hit-die-v1.json",
+      "result": "Rejected",
+      "checks": [
+        {
+          "name": "固定成人顯示高度",
+          "status": "FAIL",
+          "detail": "目前 未填 px；基準 256 px"
+        },
+        {
+          "name": "腳底中心 Pivot",
+          "status": "FAIL",
+          "detail": "目前 feet_center"
+        },
+        {
+          "name": "groundLine",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "footLock",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "rootMotionChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "collisionBoxChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "統一引擎橢圓陰影",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Idle",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Walk",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Run",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Attack",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Hit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Die",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Interact",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Turn",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Sit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：OpenDoor",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：CloseDoor",
+          "status": "FAIL",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "characterId": "wall-resident-move-attack-v1",
+      "characterType": "unknown",
+      "releaseCandidate": false,
+      "manifest": "assets/characters/manifests/wall-resident-move-attack-v1.json",
+      "result": "Rejected",
+      "checks": [
+        {
+          "name": "固定成人顯示高度",
+          "status": "FAIL",
+          "detail": "目前 未填 px；基準 256 px"
+        },
+        {
+          "name": "腳底中心 Pivot",
+          "status": "FAIL",
+          "detail": "目前 feet_center"
+        },
+        {
+          "name": "groundLine",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "footLock",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "rootMotionChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "collisionBoxChecked",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "統一引擎橢圓陰影",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Idle",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Walk",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Run",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Attack",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Hit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Die",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Interact",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Turn",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：Sit",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：OpenDoor",
+          "status": "FAIL",
+          "detail": ""
+        },
+        {
+          "name": "Animation State：CloseDoor",
+          "status": "FAIL",
+          "detail": ""
+        }
+      ]
+    }
+  ],
   "legacyAssets": [
     {
       "asset": "public/sprite-boss-b1-attack-v2.png",
