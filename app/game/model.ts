@@ -79,7 +79,6 @@ export type Destiny = {
   talent: string;
   defect: string;
   floor: number;
-  overdueDays: number;
   roomSlot: number;
 };
 
@@ -94,6 +93,7 @@ export type GameRuntime = {
   rentDue: number;
   settlementTriggered: boolean;
   landlordTask: boolean;
+  overdueDays: number;
   taskKills: number;
   debtMode: boolean;
   arrears: number;
