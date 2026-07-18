@@ -21,7 +21,10 @@ export function advanceDemoEnding(current: DemoEndingState, next: DemoEndingStat
 
 export function canAccessDemoFloor(floor: number, boundFloor: number, endingState: DemoEndingState) {
   void endingState;
-  return floor <= Math.min(9, boundFloor + 3);
+  const maximumResidentialFloor = Math.min(9, boundFloor + 3);
+  return Number.isInteger(floor)
+    && floor >= 1
+    && floor <= maximumResidentialFloor;
 }
 
 export const DEMO_ENDING_ZH_TW = {

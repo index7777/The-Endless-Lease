@@ -73,6 +73,7 @@ export type Destiny = {
   talent: string;
   defect: string;
   floor: number;
+  overdueDays: number;
   roomSlot: number;
 };
 

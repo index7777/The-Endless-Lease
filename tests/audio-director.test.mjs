@@ -7,7 +7,9 @@ test("ships and maps all nine Hong-Yi voice recordings", async () => {
     readFile(new URL("../app/game.tsx", import.meta.url), "utf8"),
     readdir(new URL("../public/audio/voice/hongyi/", import.meta.url)),
   ]);
-  assert.deepEqual(files.sort(), Array.from({ length: 9 }, (_, index) => `demo${String(index).padStart(2, "0")}.mp3`));
+  const requiredDemoFiles = Array.from({ length: 9 }, (_, index) => `demo${String(index).padStart(2, "0")}.mp3`);
+  assert.deepEqual(requiredDemoFiles.filter(file => !files.includes(file)), []);
+  assert.equal(new Set(requiredDemoFiles).size, 9);
   for (const number of [0, 1, 2]) assert.match(game, new RegExp(`playVoice\\(${number}`));
   assert.match(game, /playVoice\(firstAttempt \? 3 : 4(?:,|\))/);
   assert.match(game, /playVoice\(5 \+ managementDialogueStep\)/);

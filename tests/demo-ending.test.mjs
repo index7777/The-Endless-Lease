@@ -15,10 +15,24 @@ test("keeps the complete B2 ending state sequence data-driven", () => {
   assert.match(source, /EN TRANSLATION PENDING REVIEW/);
 });
 
-test("keeps the management office independent from numbered floors", () => {
-  assert.equal(canAccessDemoFloor(6, 1, "B2_ALIVE"), false);
-  assert.equal(canAccessDemoFloor(6, 1, "KEYCARD_COLLECTED"), false);
-  assert.equal(canAccessDemoFloor(6, 1, "CLEARANCE_REPORT_VIEWED"), false);
-  assert.equal(canAccessDemoFloor(7, 1, "CLEARANCE_REPORT_VIEWED"), false);
+test("allows lower residential floors and caps upward exploration at three floors above the lease", () => {
+  assert.deepEqual(
+    Array.from({ length: 9 }, (_, index) => index + 1).filter(floor => canAccessDemoFloor(floor, 1, "B2_ALIVE")),
+    [1, 2, 3, 4],
+  );
+  assert.deepEqual(
+    Array.from({ length: 9 }, (_, index) => index + 1).filter(floor => canAccessDemoFloor(floor, 5, "KEYCARD_COLLECTED")),
+    [1, 2, 3, 4, 5, 6, 7, 8],
+  );
+  assert.deepEqual(
+    Array.from({ length: 9 }, (_, index) => index + 1).filter(floor => canAccessDemoFloor(floor, 9, "CLEARANCE_REPORT_VIEWED")),
+    [1, 2, 3, 4, 5, 6, 7, 8, 9],
+  );
+});
+
+test("never treats event or special floors as part of the residential range", () => {
+  assert.equal(canAccessDemoFloor(0, 1, "B2_ALIVE"), false);
+  assert.equal(canAccessDemoFloor(-1, 1, "KEYCARD_COLLECTED"), false);
+  assert.equal(canAccessDemoFloor(10, 9, "CLEARANCE_REPORT_VIEWED"), false);
 });
 

@@ -8,8 +8,10 @@ import { DiceRollScene } from "./game/dice-model";
 import { ELEVATOR_FLOOR_MAX_Y, ELEVATOR_FLOOR_MIN_Y, isWalkable, probeGround, resolveSpawn } from "./game/scene-navigation";
 import { advanceDemoEnding, canAccessDemoFloor, DEMO_ENDING_ZH_TW } from "./game/demo-ending";
 import type { DemoEndingState } from "./game/demo-ending";
-import { GAME_DAY_SECONDS, getTimePeriod, getTimePeriodIndex, getTimePeriodLabel, isPatrolLightManifested, isPatrolLightPeriod, sampleCharacterExposure, SCENE_PRESENTATION, TIME_PERIOD_PROFILES } from "./game/presentation-profiles";
+import { GAME_DAY_SECONDS, getEnemyAnimationExposureMultiplier, getPlayerAnimationExposureMultiplier, getTimePeriod, getTimePeriodIndex, getTimePeriodLabel, isPatrolLightManifested, isPatrolLightPeriod, resolveSceneLightingContext, sampleCharacterExposure, sampleCharacterLighting, sampleSceneColorGrade, SCENE_PRESENTATION, TIME_PERIOD_PROFILES, toCharacterCanvasFilter } from "./game/presentation-profiles";
 import { parseRunSave, RUN_SAVE_KEY, serializeRunSave } from "./game/run-save";
+import { advanceToNextDay as advanceRuntimeToNextDay, checkCanSleep, debtTotal, payAllOutstandingRentToHongYi, type DayAdvanceReason, type RentSettlementResult } from "./game/bed-rent-system";
+import { bossMaxHealth, resetUndefeatedBossAfterEscape } from "./game/boss-encounter";
 import { getRentPursuitWave } from "./game/rent-pursuit";
 import { TitleAmbientEngine } from "./game/title-ambient";
 import type { RunSaveV1 } from "./game/run-save";
@@ -52,6 +54,8 @@ const ROOM_W = 1600;
 const ELEVATOR_W = 1000;
 const ELEVATOR_CONTROL_X = 720;
 const HOME_STORAGE_X = 720;
+const HOME_BED_X = 1060;
+const MANAGEMENT_DESK_X = 820;
 // Plaque anchors measured directly from scene-hallway-v1.png (1800 px source).
 const DOORS = [
   { slot: 1, x: 62, plaqueY: .325 }, { slot: 2, x: 246, plaqueY: .337 }, { slot: 3, x: 448, plaqueY: .337 },
@@ -67,7 +71,6 @@ const groundBand = (height: number, place: Location) => place === "elevator"
 const roomNumber = (floor: number, slot: number) => `${floor}${String(slot).padStart(2, "0")}`;
 const zoneName = (floor: number) => floor >= 20 ? "高級住戶區" : floor >= 10 ? "中層交易區" : "廉價住戶區";
 const baseRentForFloor = (floor: number, attention: number, negotiation: number) => Math.ceil((10 + 1.8 * floor + .11 * floor * floor) * (1 + attention * .06) * (1 - Math.min(.2, negotiation * .025)));
-const debtTotal = (ledger: DebtEntry[]) => ledger.reduce((total, entry) => total + entry.remainingBalance, 0);
 const phaseName = (time: number) => getTimePeriodLabel(time);
 const formatTime = (seconds: number) => { const whole = Math.ceil(seconds); return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`; };
 const inGameClock = (seconds: number) => {
@@ -127,6 +130,8 @@ export default function Game() {
   const audio = useRef<AudioContext | null>(null);
   const storageId = useRef(1);
   const titleTransitionTimer = useRef<number | null>(null);
+  const dayTransitionLock = useRef(false);
+  const rentPaymentLock = useRef({ current: false });
   const nextFluorescentFlickerAt = useRef(0);
   const game = useRef<GameRuntime>({
     player: { x: 150, y: 690, hp: 100, stamina: 100, facing: 1, attack: 0, invuln: 0 },
@@ -147,6 +152,7 @@ export default function Game() {
     rentDue: 50,
     settlementTriggered: false,
     landlordTask: false,
+    overdueDays: 0,
     taskKills: 0,
     debtMode: false,
     arrears: 0,
@@ -185,7 +191,10 @@ export default function Game() {
   const [registrationGender, setRegistrationGender] = useState<Destiny["gender"] | null>(null);
   const paused = flow.paused;
   const settlement = flow.overlay.kind === "settlement";
-  const [settlementCountdown, setSettlementCountdown] = useState(8);
+  const [settlementResult, setSettlementResult] = useState<RentSettlementResult | null>(null);
+  const [bedDialog, setBedDialog] = useState<"confirm" | "blocked" | null>(null);
+  const [hongYiRentDialog, setHongYiRentDialog] = useState<"none" | "offer" | "insufficient" | "confirm" | "success" | "error" | null>(null);
+  const [dayTransitionVisual, setDayTransitionVisual] = useState<DayAdvanceReason | null>(null);
   const roomEvent = flow.overlay.kind === "roomEvent" ? flow.overlay.roomId : null;
   const floorSelect = flow.overlay.kind === "floorSelect";
   const [location, setLocation] = useState<"hallway" | "room" | "elevator">("hallway");
@@ -232,7 +241,7 @@ export default function Game() {
   const [availableSave, setAvailableSave] = useState<RunSaveV1 | null>(null);
   const [titleTransitioning, setTitleTransitioning] = useState(false);
   const [desktopScale, setDesktopScale] = useState(1);
-  const cinematicOverlayOpen = clearanceReportOpen || managementDialogueStep !== null || floor10NoticeOpen || demoEndingOpen || logOpen || profileOpen || savePanelOpen || exitPromptOpen;
+  const cinematicOverlayOpen = clearanceReportOpen || managementDialogueStep !== null || hongYiRentDialog !== null || bedDialog !== null || dayTransitionVisual !== null || floor10NoticeOpen || demoEndingOpen || logOpen || profileOpen || savePanelOpen || exitPromptOpen;
 
   const playVoice = useCallback((number: number, onComplete?: () => void) => {
     if (typeof window === "undefined" || mutedRef.current) {
@@ -538,6 +547,7 @@ export default function Game() {
       settlementTriggered: false,
       landlordTask: false,
       taskKills: 0,
+      overdueDays: 0,
       debtMode: false,
       arrears: 0,
       rentProtectionLost: false,
@@ -587,6 +597,10 @@ export default function Game() {
     setManagementDialogueStep(null);
     setFloor10NoticeOpen(false);
     setDemoEndingOpen(false);
+    dayTransitionLock.current = false;
+    rentPaymentLock.current.current = false;
+    setBedDialog(null);
+    setHongYiRentDialog(null);
     setFloor10Attempts(0);
     if (typeof window !== "undefined") window.localStorage.removeItem("endless-lease.demo-ending");
     dispatchFlow({ type: "START_RUN" });
@@ -622,6 +636,10 @@ export default function Game() {
     setLogOpen(false);
     setTerminalRecordOpen(false);
     setProfileOpen(false);
+    dayTransitionLock.current = false;
+    rentPaymentLock.current.current = false;
+    setBedDialog(null);
+    setHongYiRentDialog(null);
     setSavePanelOpen(false);
     setExitPromptOpen(false);
     setOverdueNotice(null);
@@ -758,62 +776,25 @@ export default function Game() {
     return { threat, count };
   }, []);
 
-  const resolveRent = useCallback((choice: "pay" | "mortgage" | "refuse") => {
+  const advanceToNextDay = useCallback((reason: DayAdvanceReason) => {
     const g = game.current;
-    if (g.dead || !g.settlementTriggered) return;
-    g.debtLedger = g.debtLedger.map(entry => ({
-      ...entry,
-      remainingBalance: Math.ceil(entry.remainingBalance * 1.05),
-      interestApplied: true,
-    }));
-    g.debtLedger.push({ dayId: g.day, originalRent: g.rentDue, remainingBalance: g.rentDue, interestApplied: false, createdAt: Date.now() });
-    if (choice === "pay") {
-      let payment = Math.min(g.rent, debtTotal(g.debtLedger));
-      const paid = payment;
-      g.rent -= paid;
-      for (const entry of g.debtLedger) {
-        const applied = Math.min(payment, entry.remainingBalance);
-        entry.remainingBalance -= applied;
-        payment -= applied;
-      }
-      g.debtLedger = g.debtLedger.filter(entry => entry.remainingBalance > 0);
-      setMessage(g.debtLedger.length === 0 ? `管理室已蓋章：支付 ${paid} 租券，帳款清償` : `租券依序沖銷最舊欠款：已支付 ${paid}，餘額 ${debtTotal(g.debtLedger)}`);
-      sound("pickup");
-    }
-    if (choice === "mortgage") {
-      if (g.mortgageLayers >= 10) return;
-      const cleared = g.debtLedger.shift();
-      g.mortgageLayers += 1;
-      setMortgageMarks([`負面契約 ${g.mortgageLayers} 層｜有效能力 −${g.mortgageLayers * 10}%`]);
-      setMessage(`能力抵押成立：最舊第 ${cleared?.dayId ?? g.day} 日欠款已清除；總能力永久降低 10%`);
-      sound("hurt");
-      if (g.mortgageLayers >= 10) {
-        g.settlementTriggered = false;
-        g.dead = true;
-        dispatchFlow({ type: "DIE" });
-        setMessage("第十層抵押完成：本期帳款業已結清，你已不再具有可活動的人形資格。");
-        return;
-      }
-    }
-    const outstanding = debtTotal(g.debtLedger);
-    if (choice === "refuse" || outstanding > 0) {
-      g.debtMode = true;
-      g.attention += 1;
-      g.arrears = outstanding;
-      g.rentProtectionLost = true;
-      g.homeBreachTriggered = false;
-      g.breachTick = 2;
-      const pursuit = spawnRentPursuers(g.debtLedger.length, location, location === "room" ? activeRoom ?? undefined : undefined);
-      g.homeBreachTriggered = location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot;
-      const notice = `欠租 ${outstanding} 租券。追租程序即刻生效；${pursuit.count} 名第 ${pursuit.threat} 級追租者已取得跨樓層追索權。`;
-      setOverdueNotice(notice);
-      setMessage(notice);
-      sound("rent");
-    } else {
-      g.arrears = 0; g.debtMode = false; g.rentProtectionLost = false; g.homeBreachTriggered = false;
-    }
-    g.landlordTask = false;
-    g.day += 1;
+    if (dayTransitionLock.current || g.dead) return;
+    dayTransitionLock.current = true;
+    keys.current = {};
+    setBedDialog(null);
+    setHongYiRentDialog(null);
+    dispatchFlow({ type: "CLOSE_OVERLAY" });
+    setDayTransitionVisual(reason);
+
+    window.setTimeout(() => {
+      const maxHealth = 76 + destiny.attributes[0] * 5;
+      const result = advanceRuntimeToNextDay(g, {
+        reason,
+        restoreFullHealth: reason === "sleep",
+        maxHealth,
+        nextDailyRent: baseRentForFloor(destiny.floor, g.attention, destiny.attributes[4]),
+      });
+
     g.enemies = g.enemies.filter(enemy => enemy.kind !== "light" || enemy.hp <= 0);
     Object.values(g.floorStates).forEach(floorState => {
       floorState.enemies = floorState.enemies.filter(enemy => enemy.kind !== "light" || enemy.hp <= 0);
@@ -822,32 +803,66 @@ export default function Game() {
     if (g.day % 2 === 0 && aliveOnFloor < floorMonsterCap(g.floor)) {
       g.enemies.push({ x: 520 + Math.random() * 980, y: Math.random() > .5 ? 470 : 310, hp: 44 + g.floor * 4 + g.day * 2, maxHp: 62 + g.floor * 4 + g.day * 2, phase: Math.random() * 6, location: "hallway", followsIndoors: false, kind: "wall" });
     }
-    g.rentDue = baseRentForFloor(destiny.floor, g.attention, destiny.attributes[4]);
-    g.time = DAY_DURATION_SECONDS;
-    g.defeatedBosses = [];
     g.activeBoss = null;
-    g.phaseIndex = 0;
-    g.phaseFlash = .35;
-    g.settlementTriggered = false;
-    dispatchFlow({ type: "CLOSE_OVERLAY", kind: "settlement" });
-    setSettlementCountdown(8);
+      if (result.settlement.debtAdded > 0) {
+        g.attention += 1;
+        g.rentDue = baseRentForFloor(destiny.floor, g.attention, destiny.attributes[4]);
+        g.breachTick = 2;
+        const pursuit = spawnRentPursuers(g.debtLedger.length, location, location === "room" ? activeRoom ?? undefined : undefined);
+        g.homeBreachTriggered = location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot;
+        const notice = `當期 ${result.settlement.rentAmount} 租券未扣款，完整列入欠款。追租程序啟動；${pursuit.count} 名第 ${pursuit.threat} 級追租者取得追索權。`;
+        setOverdueNotice(notice);
+        setMessage(notice);
+      } else {
+        setMessage(`第 ${g.day} 日房租已完整支付 ${result.settlement.amountPaid} 租券。`);
+      }
+      setSettlementResult(result.settlement);
     setDebtStatus({ arrears: g.arrears, protectionLost: g.rentProtectionLost });
-    setHud({ hp: g.player.hp, stamina: g.player.stamina, rent: g.rent, time: g.time, score: g.score, day: g.day, rentDue: g.rentDue, debt: g.arrears, mortgageLayers: g.mortgageLayers, taskKills: g.taskKills, landlordTask: g.landlordTask, floor: g.floor, attention: g.attention, weaponLevel: g.weaponLevel, medkits: g.medkits, keysOwned: g.keysOwned, skillCooldown: g.skillCooldown, bossB1: false, bossB2: false });
-  }, [activeRoom, destiny, location, sound, spawnRentPursuers]);
+      setHud({ hp: g.player.hp, stamina: g.player.stamina, rent: g.rent, time: g.time, score: g.score, day: g.day, rentDue: g.rentDue, debt: g.arrears, mortgageLayers: g.mortgageLayers, taskKills: g.taskKills, landlordTask: g.landlordTask, floor: g.floor, attention: g.attention, weaponLevel: g.weaponLevel, medkits: g.medkits, keysOwned: g.keysOwned, skillCooldown: g.skillCooldown, bossB1: g.defeatedBosses.includes("boss_b1"), bossB2: g.defeatedBosses.includes("boss_b2") });
+      writeSaveRecord(0);
+      dispatchFlow({ type: "OPEN_OVERLAY", overlay: { kind: "settlement" } });
+      sound(result.settlement.paymentSucceeded ? "pickup" : "rent");
+      setDayTransitionVisual(null);
+      dayTransitionLock.current = false;
+    }, 450);
+  }, [activeRoom, destiny.attributes, destiny.floor, location, sound, spawnRentPursuers, writeSaveRecord]);
 
-  useEffect(() => {
-    if (!settlement || dead) return;
-    setSettlementCountdown(8);
-    const openedAt = Date.now();
-    const ticker = window.setInterval(() => {
-      setSettlementCountdown(Math.max(0, 8 - Math.floor((Date.now() - openedAt) / 1000)));
-    }, 200);
-    const refusal = window.setTimeout(() => resolveRent("refuse"), 8000);
-    return () => {
-      window.clearInterval(ticker);
-      window.clearTimeout(refusal);
-    };
-  }, [dead, resolveRent, settlement]);
+  const acknowledgeSettlement = useCallback(() => {
+    game.current.settlementTriggered = false;
+    setSettlementResult(null);
+    dispatchFlow({ type: "CLOSE_OVERLAY", kind: "settlement" });
+  }, []);
+
+  const openBedInteraction = useCallback(() => {
+    const g = game.current;
+    const inCombat = g.enemies.some(enemy => enemy.hp > 0 && enemy.location === "room" && enemy.roomSlot === activeRoom && (enemy.combatSeen || Math.hypot(enemy.x - g.player.x, enemy.y - g.player.y) < 330));
+    const result = checkCanSleep({
+      isInPlayerRoom: location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot,
+      isInCombat: inCombat,
+      isPlayerIncapacitated: g.dead || g.player.hp <= 0,
+      isCutsceneActive: managementDialogueStep !== null || clearanceReportOpen || demoEndingOpen,
+      isSceneTransitioning: performance.now() < sceneTransitionLockedUntil.current,
+      isDayTransitioning: dayTransitionLock.current,
+      outstandingRentDebt: debtTotal(g.debtLedger),
+    });
+    if (result.allowed) setBedDialog("confirm");
+    else if (result.reason === "rent_overdue") setBedDialog("blocked");
+    else setMessage(`目前無法休息：${result.reason === "in_combat" ? "房內仍有威脅" : "狀態或轉場尚未結束"}`);
+  }, [activeRoom, clearanceReportOpen, demoEndingOpen, destiny.floor, destiny.roomSlot, location, managementDialogueStep]);
+
+  const confirmHongYiPayment = useCallback(() => {
+    const g = game.current;
+    const result = payAllOutstandingRentToHongYi(g, rentPaymentLock.current, () => writeSaveRecord(0));
+    if (!result.success) {
+      setHongYiRentDialog(result.failureReason === "insufficient_funds" ? "insufficient" : "error");
+      return;
+    }
+    setDebtStatus({ arrears: 0, protectionLost: false });
+    setHud(value => ({ ...value, rent: g.rent, debt: 0 }));
+    setHongYiRentDialog("success");
+    setMessage(`欠款已全部清償 ${result.amountPaid} 租券；床鋪休息權限已恢復。`);
+    sound("pickup");
+  }, [sound, writeSaveRecord]);
 
   useEffect(() => {
     if (!overdueNotice) return;
@@ -958,11 +973,12 @@ export default function Game() {
     dispatchFlow({ type: "CLOSE_OVERLAY", kind: "floorSelect" });
     setClearanceReportOpen(false);
     setDemoEndingState(current => current === "KEYCARD_COLLECTED" || current === "CLEARANCE_REPORT_VIEWED" || current === "FLOOR10_BUTTON_DISCOVERED" ? "RETURN_TO_OFFICE" : current);
-    setManagementDialogueStep(0);
+    const hasRequiredMainDialogue = ["KEYCARD_COLLECTED", "CLEARANCE_REPORT_VIEWED", "FLOOR10_BUTTON_DISCOVERED", "RETURN_TO_OFFICE"].includes(demoEndingState);
+    setManagementDialogueStep(hasRequiredMainDialogue ? 0 : null);
     setHud(value => ({ ...value, floor: g.floor }));
     setMessage("租寓管理室｜將特殊權限卡放到櫃檯上");
     sound("rent");
-  }, [destiny.floor, sound]);
+  }, [demoEndingState, destiny.floor, sound]);
 
   const leaveManagementOffice = useCallback(() => {
     progressDemoEnding("POST_B2_FREE_ROAM");
@@ -994,7 +1010,7 @@ export default function Game() {
     }
     const persistentPursuers = g.enemies.filter(enemy => enemy.hp > 0 && enemy.kind === "pursuer");
     persistentPursuers.forEach((enemy, index) => { enemy.location = "hallway"; enemy.roomSlot = undefined; enemy.x = 760 - index * 52; enemy.y = 340 + (index % 2) * 120; });
-    const hp = boss === "boss_b1" ? 420 : 680;
+    const hp = bossMaxHealth(boss);
     g.activeBoss = boss;
     g.floor = boss === "boss_b1" ? 0 : -1;
     const bossEntry = resolveSpawn("hallway", "from_elevator", WORLD_W, canvasRef.current?.clientHeight || 900);
@@ -1226,6 +1242,8 @@ export default function Game() {
         setMessage(entryMessage); sound("rent");
         return;
       }
+        const escapedBoss = resetUndefeatedBossAfterEscape(g);
+        if (escapedBoss) setMessage(`${g.activeBoss === "boss_b1" ? "B1" : "B2"} 戰鬥已脫離；再次進入時 Boss 將恢復全部生命。`);
       if (g.player.x > 1690) {
         const elevatorSpawn = resolveSpawn("elevator", "from_hallway", ELEVATOR_W, canvasRef.current?.clientHeight || WORLD_H);
         g.player.x = elevatorSpawn.ground.x;
@@ -1243,7 +1261,7 @@ export default function Game() {
         keys.current = {};
         sceneTransitionLockedUntil.current = performance.now() + 650;
         setLocation("elevator"); setActiveRoom(null);
-        setMessage("已進入電梯轎廂：控制盤就在右側，靠近後按 E 選擇樓層"); sound("dice");
+        if (!escapedBoss) setMessage("已進入電梯轎廂：控制盤就在右側，靠近後按 E 選擇樓層"); sound("dice");
       }
       return;
     }
@@ -1269,15 +1287,21 @@ export default function Game() {
       return;
     }
     const activeEvent = ROOMS.find(room => room.slot === activeRoom);
-    const interactionX = location === "elevator" ? ELEVATOR_CONTROL_X : location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot ? HOME_STORAGE_X : activeEvent?.id === 2 ? ROOM_W * .26 : ROOM_W * .79;
+    const interactionX = location === "elevator" ? ELEVATOR_CONTROL_X : activeRoom === -99 ? MANAGEMENT_DESK_X : location === "room" && g.floor === destiny.floor && activeRoom === destiny.roomSlot ? (Math.abs(g.player.x - HOME_BED_X) < Math.abs(g.player.x - HOME_STORAGE_X) ? HOME_BED_X : HOME_STORAGE_X) : activeEvent?.id === 2 ? ROOM_W * .26 : ROOM_W * .79;
     if (Math.abs(g.player.x - interactionX) < (location === "elevator" ? 92 : 95)) {
       keys.current = {};
       if (location === "elevator") {
         dispatchFlow({ type: "OPEN_OVERLAY", overlay: { kind: "floorSelect" } }); setMessage("操作老式電梯控制盤"); sound("dice");
       } else if (activeRoom !== null) {
         const isOwnRoom = g.floor === destiny.floor && activeRoom === destiny.roomSlot;
-        const eventRoom = ROOMS.find(room => room.slot === activeRoom);
-        if (isOwnRoom) {
+        if (activeRoom === -99) {
+          setHongYiRentDialog(debtTotal(g.debtLedger) > 0 ? "offer" : "none");
+          setMessage(debtTotal(g.debtLedger) > 0 ? "紅怡：「你的帳還掛著。」" : "紅怡核對帳本：目前沒有欠租。");
+        } else {
+          const eventRoom = ROOMS.find(room => room.slot === activeRoom);
+          if (isOwnRoom && interactionX === HOME_BED_X) {
+          openBedInteraction();
+        } else if (isOwnRoom) {
           dispatchFlow({ type: "OPEN_OVERLAY", overlay: { kind: "storage" } });
           setMessage("個人儲物櫃已開啟：相同物品可堆疊，離開櫃子範圍會自動關閉");
         } else if (eventRoom && !g.visitedRooms.includes(eventRoom.id)) {
@@ -1288,7 +1312,8 @@ export default function Game() {
         }
       }
     }
-  }, [activeRoom, demoEndingState, destiny.attributes, destiny.defect, destiny.floor, destiny.roomSlot, leaveManagementOffice, location, progressDemoEnding, sound, spawnRentPursuers]);
+        }
+  }, [activeRoom, demoEndingState, destiny.attributes, destiny.defect, destiny.floor, destiny.roomSlot, leaveManagementOffice, location, openBedInteraction, progressDemoEnding, sound, spawnRentPursuers]);
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -1497,12 +1522,7 @@ export default function Game() {
         } else {
           g.breachTick = 2;
         }
-        if (g.time === 0 && !g.settlementTriggered) {
-          g.settlementTriggered = true;
-          dispatchFlow({ type: "OPEN_OVERLAY", overlay: { kind: "settlement" } });
-          setMessage(MANAGEMENT_COPY.rent);
-          sound("rent");
-        }
+        if (g.time === 0 && !g.settlementTriggered) advanceToNextDay("natural");
         for (const e of g.enemies) if (e.hp > 0 && e.location === location && (location !== "room" || e.roomSlot === activeRoom)) {
           const dist = Math.hypot(p.x - e.x, p.y - e.y);
           const safeDist = Math.max(1, dist);
@@ -1695,6 +1715,11 @@ export default function Game() {
             : location === "room" && activeRoom === destiny.roomSlot && g.floor === destiny.floor ? sceneImages.room
               : location === "room" && ROOMS.find(room => room.slot === activeRoom)?.id === 2 ? sceneImages.clinic
               : sceneImages[location];
+      const sceneLightingContext = resolveSceneLightingContext(location, {
+        activeBoss: g.activeBoss,
+        managementOffice: location === "room" && activeRoom === -99,
+        clinic: location === "room" && ROOMS.find(room => room.slot === activeRoom)?.id === 2,
+      });
       if (sceneImage.complete && sceneImage.naturalWidth > 0) {
         ctx.drawImage(sceneImage, 0, 0, sceneWidth, h);
         ctx.fillStyle = "rgba(4,7,6,.12)";
@@ -1752,9 +1777,20 @@ export default function Game() {
       } else if (location === "room") {
         const activeEvent = ROOMS.find(room => room.slot === activeRoom);
         const own = activeRoom !== null && g.floor === destiny.floor && activeRoom === destiny.roomSlot;
-        const promptX = own ? HOME_STORAGE_X - 15 : activeEvent?.id === 2 ? 300 : 705;
         if (p.x < 175) { ctx.fillStyle = "rgba(9,12,10,.72)"; ctx.fillRect(15, h * .22, 125, 34); ctx.fillStyle = "#d0c29d"; ctx.font = "700 14px serif"; ctx.fillText("E 返回走廊", 25, h * .255); }
-        if (Math.abs(p.x - (own ? HOME_STORAGE_X : activeEvent?.id === 2 ? 260 : 790)) < 145) { ctx.fillStyle = "rgba(9,12,10,.72)"; ctx.fillRect(promptX, h * .38, 180, 64); ctx.fillStyle = "#d0c29d"; ctx.font = "700 16px serif"; ctx.fillText(own ? "個人儲物櫃" : activeEvent?.id === 0 ? "滲水牆面" : activeEvent?.id === 1 ? "封鎖牆面" : "住戶診療台", promptX + 15, h * .43); ctx.font = "13px serif"; ctx.fillText(own ? "靠近按 E 整理" : "靠近按 E 探索", promptX + 15, h * .47); }
+        if (own) {
+          const nearestHomeInteraction = Math.abs(p.x - HOME_BED_X) < Math.abs(p.x - HOME_STORAGE_X) ? HOME_BED_X : HOME_STORAGE_X;
+          if (Math.abs(p.x - nearestHomeInteraction) < 145) {
+            const isBed = nearestHomeInteraction === HOME_BED_X;
+            const promptX = nearestHomeInteraction - 90;
+            ctx.fillStyle = "rgba(9,12,10,.78)"; ctx.fillRect(promptX, h * .38, 210, 64); ctx.fillStyle = "#d0c29d"; ctx.font = "700 16px serif"; ctx.fillText(isBed ? "承租房床鋪" : "個人儲物櫃", promptX + 15, h * .43); ctx.font = "13px serif"; ctx.fillText(isBed ? (debtTotal(g.debtLedger) > 0 ? "E　查看休息限制" : "E　休息至次日") : "靠近按 E 整理", promptX + 15, h * .47);
+          }
+        } else if (activeRoom === -99 && Math.abs(p.x - MANAGEMENT_DESK_X) < 145) {
+          ctx.fillStyle = "rgba(9,12,10,.78)"; ctx.fillRect(MANAGEMENT_DESK_X - 90, h * .38, 210, 64); ctx.fillStyle = "#d0c29d"; ctx.font = "700 16px serif"; ctx.fillText("管理員・紅怡", MANAGEMENT_DESK_X - 75, h * .43); ctx.font = "13px serif"; ctx.fillText("E　辦理管理室業務", MANAGEMENT_DESK_X - 75, h * .47);
+        } else {
+          const promptX = activeEvent?.id === 2 ? 300 : 705;
+          if (Math.abs(p.x - (activeEvent?.id === 2 ? 260 : 790)) < 145) { ctx.fillStyle = "rgba(9,12,10,.72)"; ctx.fillRect(promptX, h * .38, 180, 64); ctx.fillStyle = "#d0c29d"; ctx.font = "700 16px serif"; ctx.fillText(activeEvent?.id === 0 ? "滲水牆面" : activeEvent?.id === 1 ? "封鎖牆面" : "住戶診療台", promptX + 15, h * .43); ctx.font = "13px serif"; ctx.fillText("靠近按 E 探索", promptX + 15, h * .47); }
+        }
       } else {
         ctx.fillStyle = "rgba(9,12,10,.75)"; ctx.fillRect(12, h * .25, 80, 30); ctx.fillRect(750, h * .63, 220, 34);
         ctx.fillStyle = "#d0c29d"; ctx.font = "700 12px serif"; ctx.fillText("E 離開", 24, h * .28); ctx.fillText(g.floor <= 0 ? "維修貨梯控制盤｜E 操作" : "控制盤｜E 操作", 765, h * .67);
@@ -1769,14 +1805,13 @@ export default function Game() {
         const step = movingEnemy ? Math.sin(now / (isBoss ? 145 : 105) + e.phase) : 0;
         const attackProgress = attacking ? 1 - (e.attackTimer ?? 0) / (isBoss ? .68 : .48) : 0;
         const lunge = attacking ? Math.sin(attackProgress * Math.PI) * (isBoss ? 18 : 11) : 0;
-        const nearestEnemyLight = SCENE_PRESENTATION[location].lights.reduce((nearest, light) => Math.abs(light - e.x / sceneWidth) < Math.abs(nearest - e.x / sceneWidth) ? light : nearest, SCENE_PRESENTATION[location].lights[0]);
-        const enemyShadowDx = clamp((e.x / sceneWidth - nearestEnemyLight) * 58, -24, 24);
+        const enemyLighting = sampleCharacterLighting(sceneLightingContext, e.x / sceneWidth, g.time);
         const lightManifested = e.kind !== "light" || isPatrolLightManifested(now, e.phase, e.hp, g.time);
-        if (lightManifested) { ctx.save(); ctx.filter = "blur(2px)"; ctx.fillStyle = `rgba(0,0,0,${.2 + enemyDepth * .14})`; ctx.beginPath(); ctx.ellipse(e.x + enemyShadowDx, e.y + 2, (e.elite || isBoss ? 48 : 34) * enemyScale, (e.elite || isBoss ? 10 : 8) * enemyScale, enemyShadowDx * .009, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
+        if (lightManifested) { ctx.save(); ctx.filter = `blur(${enemyLighting.shadowBlurPx}px)`; ctx.fillStyle = `rgba(0,0,0,${enemyLighting.shadowOpacity})`; ctx.beginPath(); ctx.ellipse(e.x + enemyLighting.shadowOffsetX, e.y + 2, (e.elite || isBoss ? 48 : 34) * enemyScale, (e.elite || isBoss ? 10 : 8) * enemyScale, enemyLighting.shadowOffsetX * .009, 0, Math.PI * 2); ctx.fill(); ctx.restore(); }
         const enemyFacing = e.hp <= 0 ? (e.deathFacing ?? 1) : e.aiState === "patrol" ? (e.facing ?? 1) : (p.x > e.x ? -1 : 1);
         const corpseFade = e.hp <= 0 && e.deathTimer !== undefined ? clamp(e.deathTimer, 0, 1) : 1;
-        const enemyExposure = sampleCharacterExposure(location, .5, g.time) * (e.kind === "light" ? .62 : 1);
-        ctx.save(); ctx.translate(e.x + (e.hp > 0 && p.x > e.x ? lunge : e.hp > 0 ? -lunge : 0), e.y); ctx.scale(enemyFacing, 1); ctx.filter = `brightness(${enemyExposure}) saturate(.86)`;
+        const enemyPose = e.deathTimer !== undefined ? "death" : (e.hitTimer ?? 0) > 0 ? "hit" : attacking ? "attack" : movingEnemy ? "walk" : "idle";
+        ctx.save(); ctx.translate(e.x + (e.hp > 0 && p.x > e.x ? lunge : e.hp > 0 ? -lunge : 0), e.y); ctx.scale(enemyFacing, 1); ctx.filter = toCharacterCanvasFilter(enemyLighting, (e.kind === "light" ? .62 : 1) * getEnemyAnimationExposureMultiplier(enemyPose));
         ctx.globalAlpha *= lightManifested ? corpseFade : 0;
         if (e.kind === "wall" && !e.alerted) ctx.globalAlpha = .14;
         const enemyKey = e.kind === "boss_b1" ? (attacking ? "bossB1Attack" : "bossB1") : e.kind === "boss_b2" ? (attacking ? "bossB2Attack" : "bossB2") : e.kind === "light" ? "light" : e.kind === "receipt" ? "receipt" : e.elite || e.kind === "pursuer" ? (attacking ? "pursuerAttack" : "pursuer") : attacking ? "wallAttack" : "wall";
@@ -1857,16 +1892,15 @@ export default function Game() {
       }
       const depth = clamp((p.y - band.top) / Math.max(1, band.bottom - band.top), 0, 1);
       const depthScale = .82 + depth * .26;
-      const nearestPlayerLight = SCENE_PRESENTATION[location].lights.reduce((nearest, light) => Math.abs(light - p.x / sceneWidth) < Math.abs(nearest - p.x / sceneWidth) ? light : nearest, SCENE_PRESENTATION[location].lights[0]);
-      const playerShadowDx = clamp((p.x / sceneWidth - nearestPlayerLight) * 64, -28, 28);
-      ctx.save(); ctx.filter = "blur(2.4px)"; ctx.fillStyle = `rgba(0,0,0,${.24 + depth * .14})`; ctx.beginPath(); ctx.ellipse(p.x + playerShadowDx, p.y + 2, 38 * depthScale, 8 * depthScale, playerShadowDx * .008, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      const playerLighting = sampleCharacterLighting(sceneLightingContext, p.x / sceneWidth, g.time);
+      ctx.save(); ctx.filter = `blur(${playerLighting.shadowBlurPx}px)`; ctx.fillStyle = `rgba(0,0,0,${playerLighting.shadowOpacity})`; ctx.beginPath(); ctx.ellipse(p.x + playerLighting.shadowOffsetX, p.y + 2, 38 * depthScale, 8 * depthScale, playerLighting.shadowOffsetX * .008, 0, Math.PI * 2); ctx.fill(); ctx.restore();
       ctx.save(); ctx.translate(p.x, p.y);
       ctx.scale(p.facing, 1);
-      ctx.filter = `brightness(${sampleCharacterExposure(location, .5, g.time)}) saturate(.88)`;
-      if (p.invuln > 0) ctx.globalAlpha = .45 + Math.sin(now / 35) * .25;
       const walkPhase = isMoving ? Math.floor(now / (1000 / 12)) % 16 : -1;
       const pose = g.dead ? "death" : p.attack > 0 ? "attack" : isMoving ? "walk" : "idle";
       const female = destiny.gender === "female";
+      ctx.filter = toCharacterCanvasFilter(playerLighting, getPlayerAnimationExposureMultiplier(destiny.gender, pose));
+      if (p.invuln > 0) ctx.globalAlpha = .45 + Math.sin(now / 35) * .25;
       const useCandidateSheet = !g.dead && (pose === "attack" || pose === "walk");
       if (useCandidateSheet) {
         const attackProgress = pose === "attack" ? clamp(1 - p.attack / (16 / 24), 0, 1) : 0;
@@ -1901,6 +1935,17 @@ export default function Game() {
       ctx.restore();
       }
 
+      const sceneGrade = sampleSceneColorGrade(sceneLightingContext, g.time);
+      ctx.save();
+      ctx.globalCompositeOperation = "multiply";
+      ctx.fillStyle = `rgba(${sceneGrade.multiply[0]},${sceneGrade.multiply[1]},${sceneGrade.multiply[2]},${sceneGrade.multiplyOpacity})`;
+      ctx.fillRect(0, 0, w, h);
+      ctx.globalCompositeOperation = "soft-light";
+      ctx.fillStyle = `rgba(${sceneGrade.softLight[0]},${sceneGrade.softLight[1]},${sceneGrade.softLight[2]},${sceneGrade.softLightOpacity})`;
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+
+
       if (g.debtMode) { const v = ctx.createRadialGradient(w / 2, h / 2, h * .55, w / 2, h / 2, h * .9); v.addColorStop(0, "transparent"); v.addColorStop(1, "rgba(72,45,35,.14)"); ctx.fillStyle = v; ctx.fillRect(0, 0, w, h); }
       if (p.hp < (76 + destiny.attributes[0] * 5) * .3) { const low = clamp(1 - p.hp / ((76 + destiny.attributes[0] * 5) * .3), 0, 1); const v = ctx.createRadialGradient(w/2,h/2,h*.5,w/2,h/2,h*.86);v.addColorStop(0,"transparent");v.addColorStop(1,`rgba(92,18,17,${.1 + low * .2})`);ctx.fillStyle=v;ctx.fillRect(0,0,w,h); }
       if (g.phaseFlash > 0) { const flashStep = Math.floor((.75 - g.phaseFlash) / .125); if (flashStep >= 0 && flashStep < 6 && flashStep % 2 === 0) { ctx.fillStyle = "rgba(215,228,216,.3)"; ctx.fillRect(0, 0, w, h); } }
@@ -1909,7 +1954,7 @@ export default function Game() {
     };
     animationFrame = requestAnimationFrame(draw);
     return () => { cancelAnimationFrame(animationFrame); window.removeEventListener("resize", resize); };
-  }, [activeRoom, cinematicOverlayOpen, controls, demoEndingState, flow.screen, paused, floorSelect, roomEvent, storageOpen, location, destiny.attributes, destiny.floor, destiny.roomSlot, destiny.gender, destiny.talent, destiny.defect, sound]);
+  }, [activeRoom, advanceToNextDay, cinematicOverlayOpen, controls, demoEndingState, flow.screen, paused, floorSelect, roomEvent, storageOpen, location, destiny.attributes, destiny.floor, destiny.roomSlot, destiny.gender, destiny.talent, destiny.defect, sound]);
 
   useEffect(() => {
     const updateDesktopScale = () => {
@@ -2084,16 +2129,37 @@ export default function Game() {
       </section>}
       {started && settlement && <section className="settlement-screen">
         <div className="settlement-paper">
-          <header><small>無期租寓管理室｜日租結算通知</small><h2>第 {hud.day} 日</h2><strong>今日 {hud.rentDue} 租券</strong><p>舊債 {hud.debt} 租券，將先增加 5% 利息；你目前持有 {hud.rent} 張租券。</p></header>
-          <p className="auto-choice">剩餘 {settlementCountdown} 秒；逾時未選擇將自動視為拒絕繳租。結算期間追租者不會停止。</p>
+          <header><small>無期租寓管理室｜日租結算通知</small><h2>第 {hud.day} 日</h2><strong>當期 {settlementResult?.rentAmount ?? 0} 租券</strong><p>{settlementResult?.paymentSucceeded ? `已完整支付 ${settlementResult.amountPaid} 租券。` : `持有租券不足，未扣除任何金額；完整 ${settlementResult?.debtAdded ?? 0} 租券已列入欠款。`}</p></header>
           <div className="settlement-options">
-            <button disabled={hud.rent <= 0} onClick={() => resolveRent("pay")}><b>支付可用租券</b><span>最多支付 {hud.rent}，永遠從最舊欠款開始；不足時仍保留餘額</span></button>
-            <button className="refuse" onClick={() => resolveRent("refuse")}><b>拒絕繳租</b><span>欠款完整結轉、失去租金保護；回到承租房後觸發侵蝕與追租者</span></button>
-            <div className="mortgage-options"><header><b>抵押一層能力</b><span>{MANAGEMENT_COPY.mortgage}</span></header><button disabled={hud.mortgageLayers >= 10} onClick={() => resolveRent("mortgage")}><b>簽署第 {hud.mortgageLayers + 1} 層抵押</b><span>清除最舊一日欠款｜六項有效能力由 −{hud.mortgageLayers * 10}% 變為 −{Math.min(100, (hud.mortgageLayers + 1) * 10)}%</span></button></div>
+            <button onClick={acknowledgeSettlement}><b>確認結算</b><span>{hud.debt > 0 ? `累積欠款 ${hud.debt} 租券；請前往管理處找紅怡一次結清。` : `目前沒有欠款；承租房床鋪可正常使用。`}</span></button>
           </div>
-          <footer>承租房 {roomNumber(destiny.floor, destiny.roomSlot)} 今日租金已鎖定；不能預付。未清餘額會保留在逐日帳本。</footer>
+          <footer>承租房 {roomNumber(destiny.floor, destiny.roomSlot)}｜房租只在日期增加時結算一次；欠款不接受部分支付。</footer>
         </div>
       </section>}
+      {started && bedDialog !== null && <section className="bed-rent-dialog"><article>
+        <small>{roomNumber(destiny.floor, destiny.roomSlot)}｜承租房床鋪</small>
+        {bedDialog === "blocked" ? <>
+          <h2>休息權限已暫停</h2><strong>目前欠繳：{hud.debt} 租券</strong>
+          <p>請前往管理處，向紅怡一次繳清全部欠款後，恢復床鋪休息權限。</p>
+          <blockquote>居住權仍有效。完整休息權限已凍結。</blockquote>
+          <footer><ManagementButton data-variant="paper" onClick={() => setBedDialog(null)}>確認</ManagementButton></footer>
+        </> : <>
+          <h2>完整休息</h2><p>生命將完全恢復。今日剩餘時間將直接結束，遊戲將前進至下一日房租結算。</p>
+          <dl><div><dt>目前日期</dt><dd>第 {hud.day} 日</dd></div><div><dt>目前時間</dt><dd>{inGameClock(hud.time)}</dd></div><div><dt>下一期房租</dt><dd>{hud.rentDue} 租券</dd></div></dl>
+          {hud.rent < hud.rentDue && <p className="bed-rent-warning">警告：目前租券不足以支付下一期房租。結算後將進入欠租狀態，床鋪休息權限會停用。</p>}
+          <footer><ManagementButton onClick={() => setBedDialog(null)}>取消</ManagementButton><ManagementButton data-variant="paper" onClick={() => advanceToNextDay("sleep")}>休息</ManagementButton></footer>
+        </>}
+      </article></section>}
+      {started && hongYiRentDialog !== null && <section className="bed-rent-dialog hongyi-rent-dialog"><article>
+        <small>租寓管理室｜管理員・紅怡</small>
+        {hongYiRentDialog === "none" && <><h2>帳本無欠款</h2><p>「目前沒有掛帳。別把準時當成恩惠。」</p><footer><ManagementButton data-variant="paper" onClick={() => setHongYiRentDialog(null)}>離開</ManagementButton></footer></>}
+        {hongYiRentDialog === "offer" && <><h2>「你的帳還掛著。」</h2><dl><div><dt>欠款</dt><dd>{hud.debt} 租券</dd></div><div><dt>持有</dt><dd>{hud.rent} 租券</dd></div></dl><footer><ManagementButton onClick={() => setHongYiRentDialog(null)}>離開</ManagementButton><ManagementButton data-variant="paper" onClick={() => setHongYiRentDialog(hud.rent >= hud.debt ? "confirm" : "insufficient")}>繳交欠租</ManagementButton></footer></>}
+        {hongYiRentDialog === "insufficient" && <><h2>無法結清</h2><dl><div><dt>欠款</dt><dd>{hud.debt}</dd></div><div><dt>持有</dt><dd>{hud.rent}</dd></div><div><dt>尚缺</dt><dd>{Math.max(0, hud.debt - hud.rent)}</dd></div></dl><p>「管理處只接受一次結清。等你湊齊再來。」</p><footer><ManagementButton data-variant="paper" onClick={() => setHongYiRentDialog(null)}>離開</ManagementButton></footer></>}
+        {hongYiRentDialog === "confirm" && <><h2>一次付清全部欠款</h2><p>欠款：{hud.debt} 租券<br/>持有：{hud.rent} 租券</p><strong>是否一次付清全部欠款？</strong><footer><ManagementButton onClick={() => setHongYiRentDialog("offer")}>取消</ManagementButton><ManagementButton data-variant="paper" onClick={confirmHongYiPayment}>支付 {hud.debt}</ManagementButton></footer></>}
+        {hongYiRentDialog === "success" && <><h2>「收到了。」</h2><p>欠款已全部清償。床鋪休息權限已恢復。</p><footer><ManagementButton data-variant="paper" onClick={() => setHongYiRentDialog(null)}>完成</ManagementButton></footer></>}
+        {hongYiRentDialog === "error" && <><h2>交易未完成</h2><p>帳本沒有變動，請重新與紅怡辦理。</p><footer><ManagementButton data-variant="paper" onClick={() => setHongYiRentDialog(null)}>離開</ManagementButton></footer></>}
+      </article></section>}
+      {started && dayTransitionVisual !== null && <section className="day-transition" aria-live="polite"><span>{dayTransitionVisual === "sleep" ? "休息中" : "日期結算中"}</span></section>}
       {started && roomEvent !== null && <section className="room-event-screen"><div className="room-event-card">
         <small>{roomNumber(hud.floor, ROOMS[roomEvent].slot)} 號房｜未登記空間</small><h2>{ROOMS[roomEvent].title}</h2><p>{ROOMS[roomEvent].description}</p>
         <p className="auto-choice">離開探索物件的互動範圍會關閉事件窗；要離開房間請走回門口。</p>

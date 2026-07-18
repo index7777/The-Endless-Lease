@@ -122,7 +122,10 @@ test("keeps patrol-light invisibility visual-only and disables it on death", () 
   assert.match(game, /ordinaryKinds = isPatrolLightPeriod\(secondsRemaining\)/);
   assert.match(game, /roomEvent === 1 && choice === 1 && isPatrolLightPeriod\(g\.time\)/);
   assert.match(game, /const lightManifested = e\.kind !== "light" \|\| isPatrolLightManifested\(now, e\.phase, e\.hp, g\.time\)/);
-  assert.match(game, /enemyExposure = sampleCharacterExposure[^\n]+e\.kind === "light" \? \.62 : 1/);
+  assert.match(game, /sampleCharacterLighting\(sceneLightingContext, e\.x \/ sceneWidth, g\.time\)/);
+  assert.match(game, /sampleCharacterLighting\(sceneLightingContext, p\.x \/ sceneWidth, g\.time\)/);
+  assert.match(game, /getEnemyAnimationExposureMultiplier\(enemyPose\)/);
+  assert.match(game, /getPlayerAnimationExposureMultiplier\(destiny\.gender, pose\)/);
   assert.match(game, /ctx\.globalAlpha \*= lightManifested \? corpseFade : 0/);
   assert.match(game, /e\.hp > 0 && lightManifested && \(isBoss \|\| e\.elite \|\| e\.combatSeen \|\| enemyDistance < 270\)/);
   assert.doesNotMatch(game, /if \(!lightManifested\) continue/);

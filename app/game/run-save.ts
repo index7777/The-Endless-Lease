@@ -45,6 +45,7 @@ const isGameRuntime = (value: unknown): value is GameRuntime => {
   const numericPlayerFields = [player.x, player.y, player.hp, player.stamina, player.facing, player.attack, player.invuln];
   const numericFields = [value.rent, value.time, value.score, value.day, value.rentDue, value.arrears, value.breachTick, value.floor, value.attention, value.weaponLevel, value.medkits, value.keysOwned, value.skillCooldown, value.camera, value.mortgageLayers, value.phaseIndex, value.phaseFlash];
   return numericPlayerFields.every(isFiniteNumber)
+    && (value.overdueDays === undefined || isFiniteNumber(value.overdueDays))
     && numericFields.every(isFiniteNumber)
     && Array.isArray(value.enemies)
     && Array.isArray(value.pickups)
@@ -83,6 +84,7 @@ export const parseRunSave = (serialized: string | null): RunSaveV1 | null => {
       || !isGameRuntime(value.game)) return null;
     const save = value as RunSaveV1;
     save.game.player.attack = 0;
+    save.game.overdueDays = save.game.overdueDays ?? save.game.debtLedger.length;
     save.game.player.invuln = 0;
     save.game.settlementTriggered = false;
     save.game.dead = false;
