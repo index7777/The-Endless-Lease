@@ -1,10 +1,32 @@
 import type { GameRuntime } from "./model";
 import { BOSS_BALANCE } from "./game-balance.ts";
 
-export function resetUndefeatedBossAfterEscape(runtime: GameRuntime) {
+export type BossResetPoint = { x: number; y: number };
+
+export function resetUndefeatedBossAfterEscape(runtime: GameRuntime, origin: BossResetPoint) {
   const boss = runtime.activeBoss;
   if (!boss || runtime.defeatedBosses.includes(boss)) return false;
-  runtime.enemies = runtime.enemies.filter(enemy => enemy.kind !== boss);
+  const enemy = runtime.enemies.find(candidate => candidate.kind === boss);
+  if (!enemy) return false;
+  const maxHp = bossMaxHealth(boss);
+  enemy.hp = maxHp;
+  enemy.maxHp = maxHp;
+  enemy.x = origin.x;
+  enemy.y = origin.y;
+  enemy.location = "hallway";
+  enemy.roomSlot = undefined;
+  enemy.aiState = "patrol";
+  enemy.patrolAnchorX = origin.x;
+  enemy.patrolAnchorY = origin.y;
+  enemy.patrolTargetX = undefined;
+  enemy.patrolTargetY = undefined;
+  enemy.patrolWait = 0;
+  enemy.attackTimer = 0;
+  enemy.attackCooldown = 0;
+  enemy.attackLanded = false;
+  enemy.combatSeen = false;
+  enemy.moving = false;
+  enemy.hitTimer = 0;
   return true;
 }
 

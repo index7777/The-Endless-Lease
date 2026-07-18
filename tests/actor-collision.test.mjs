@@ -28,6 +28,15 @@ test("player is blocked above, below and beside every living enemy", () => {
   }
 });
 
+test("B1 and B2 block a continuous vertical crossing from above", () => {
+  for (const kind of ["boss_b1", "boss_b2"]) {
+    const target = enemy({ kind });
+    for (let y = 496; y <= 704; y += 8) {
+      assert.equal(isPositionBlockedByEnemy([target], "hallway", null, 500, y), true, `${kind} must block at y=${y}`);
+    }
+  }
+});
+
 test("enemy remains solid through death animation and releases after it completes", () => {
   const dying = enemy({ hp: 0, deathTimer: 1.2 });
   assert.equal(isPositionBlockedByEnemy([dying], "hallway", null, 500, 600), true);

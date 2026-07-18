@@ -130,7 +130,8 @@ test("pause freezes the shared visual clock and removes the redundant pause stam
   assert.match(game, /const animationNow = visualClock\.current/);
   assert.match(game, /renderPlayerMoving = paused \? playerWasMoving\.current : isMoving/);
   assert.doesNotMatch(game, /Math\.floor\(now \/ \(1000 \/ 24\)\)/);
-  assert.match(css, /\.pause-menu>div::after\{content:none;display:none\}/);
+  assert.match(game, /if \(paused\) \{[\s\S]*animationFrame = requestAnimationFrame\(draw\);[\s\S]*return;/);
+  assert.doesNotMatch(css, /\.pause-menu>div::after/);
 });
 
 test("settings groups controls and persists master plus independent audio channels", () => {

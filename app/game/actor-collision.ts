@@ -1,9 +1,12 @@
 import type { Enemy, Location } from "./model";
 
-export const BOSS_COLLISION_RADIUS = 88;
-export const NORMAL_ENEMY_COLLISION_RADIUS = 58;
-export const RENT_PURSUER_COLLISION_RADIUS = 64;
-export const BOSS_COLLISION_Y_SCALE = 1.55;
+export const BOSS_COLLISION_RADIUS = 100;
+export const NORMAL_ENEMY_COLLISION_RADIUS = 60;
+export const RENT_PURSUER_COLLISION_RADIUS = 68;
+// Actor coordinates represent their feet. The previous value made the
+// collision ellipse too shallow vertically, allowing visual overlap when the
+// player approached a tall enemy from above.
+export const BOSS_COLLISION_Y_SCALE = .9;
 
 export function isBossEnemy(enemy: Enemy) {
   return enemy.kind === "boss_b1" || enemy.kind === "boss_b2";

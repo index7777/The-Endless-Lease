@@ -1,5 +1,6 @@
 export const HOME_STORAGE_X = 720;
-export const HOME_BED_RANGE = [900, 1280] as const;
+// Match the visible bed and leave a reachable lane in front of its collider.
+export const HOME_BED_RANGE = [820, 1340] as const;
 export const HOME_BED_LABEL_X = 1090;
 
 export function horizontalDistanceToRange(x: number, range: readonly [number, number]) {

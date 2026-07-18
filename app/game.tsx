@@ -1234,9 +1234,11 @@ export default function Game() {
         setMessage(entryMessage); sound("rent");
         return;
       }
-        const escapedBoss = resetUndefeatedBossAfterEscape(g);
-        if (escapedBoss) setMessage(`${g.activeBoss === "boss_b1" ? "B1" : "B2"} 戰鬥已脫離；再次進入時 Boss 將恢復全部生命。`);
       if (g.player.x > 1690) {
+        const activeBossBeforeEscape = g.activeBoss;
+        const bossOriginY = probeGround("hallway", 520, WORLD_W, canvasRef.current?.clientHeight || 900, g.player.y).y;
+        const escapedBoss = resetUndefeatedBossAfterEscape(g, { x: 520, y: bossOriginY });
+        if (escapedBoss) setMessage(`${activeBossBeforeEscape === "boss_b1" ? "B1" : "B2"} 戰鬥已脫離；Boss 已回到原位並恢復全部生命。`);
         const elevatorSpawn = resolveSpawn("elevator", "from_hallway", ELEVATOR_W, canvasRef.current?.clientHeight || WORLD_H);
         g.player.x = elevatorSpawn.ground.x;
         g.player.y = elevatorSpawn.ground.y;
@@ -1434,6 +1436,11 @@ export default function Game() {
     const draw = (now: number) => {
       const w = canvas.clientWidth, h = canvas.clientHeight;
       const dt = Math.min((now - last) / 1000, 0.033); last = now;
+      if (paused) {
+        keys.current = {};
+        animationFrame = requestAnimationFrame(draw);
+        return;
+      }
       if (!paused) visualClock.current += dt * 1000;
       const animationNow = visualClock.current;
       const g = game.current, p = g.player;
