@@ -4,6 +4,8 @@ import test from "node:test";
 
 const game = await readFile(new URL("../app/game.tsx", import.meta.url), "utf8");
 const navigation = await readFile(new URL("../app/game/scene-navigation.ts", import.meta.url), "utf8");
+const balance = await readFile(new URL("../app/game/game-balance.ts", import.meta.url), "utf8");
+const floorGeneration = await readFile(new URL("../app/game/floor-generation.ts", import.meta.url), "utf8");
 const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
 
 test("keeps T14 on the approved logo and shared management buttons", () => {
@@ -19,7 +21,8 @@ test("keeps T14 on the approved logo and shared management buttons", () => {
 test("keeps the twelve-minute demo clock and three-second medicine cooldown", () => {
   assert.match(game, /DAY_DURATION_SECONDS = GAME_DAY_SECONDS/);
   assert.match(game, /\(DAY_DURATION_SECONDS - seconds\) \* 2/);
-  assert.match(game, /setMedkitCooldown\(3\)/);
+  assert.match(game, /setMedkitCooldown\(ITEM_BALANCE\.medicineCooldownSeconds\)/);
+  assert.match(balance, /medicineCooldownSeconds: 3/);
 });
 
 test("keeps the current in-game time and four-period label visible in the top bar", () => {
@@ -45,7 +48,7 @@ test("ships candidate motion, attack, hit and collapse sheets for players and en
 });
 
 test("keeps room, clinic and elevator movement inside world collision profiles", () => {
-  assert.match(navigation, /RoomCollisionProfile = "home" \| "clinic" \| "management"/);
+  assert.match(navigation, /RoomCollisionProfile = "home" \| "clinic" \| "management" \| "memory_echo"/);
   assert.match(navigation, /CLINIC_COLLIDERS/);
   assert.match(navigation, /worldWidth \* \.06/);
   assert.match(navigation, /x \+ radius <= worldWidth \* \.40/);
@@ -61,7 +64,8 @@ test("keeps room, clinic and elevator movement inside world collision profiles",
   assert.match(game, /const ELEVATOR_CONTROL_X = 720/);
   assert.doesNotMatch(game, /location === "elevator" \? 824/);
   assert.doesNotMatch(game, /g\.player\.x = 105; g\.player\.y = 690/);
-  assert.match(game, /else if \(Math\.abs\(dx\) > \.1 && isWalkable/);
+  assert.match(game, /else if \(Math\.abs\(dx\) > \.1 && canPlayerOccupy/);
+  assert.match(game, /isPositionBlockedByEnemy/);
 });
 
 test("keeps elevator characters on the visible floor at the calibrated cabin scale", () => {
@@ -105,11 +109,13 @@ test("restarts a dead resident from a blank registration without the previous ca
   assert.match(css, /\.game-shell\.is-menu \.game-canvas,.game-shell\.is-menu \.film\{visibility:hidden\}/);
 });
 
-test("keeps the corpse still while living enemies approach without attacking", () => {
+test("keeps the corpse still while enemies release aggro and patrol without attacking", () => {
   assert.match(game, /p\.hp = 0; p\.invuln = 0; p\.attack = 0/);
   assert.match(game, /flow\.screen === "dead" && g\.dead/);
   assert.match(game, /e\.attackTimer = 0/);
-  assert.match(game, /corpseDistance <= 62/);
+  assert.match(game, /detachEnemiesFromDeadPlayer\(g\)/);
+  assert.match(game, /e\.aiState = "patrol"/);
+  assert.doesNotMatch(game, /corpseDistance|approachSpeed/);
 });
 
 test("offers restart and exit actions on the death menu", () => {
@@ -118,10 +124,30 @@ test("offers restart and exit actions on the death menu", () => {
   assert.match(game, />離開遊戲<\/button>/);
 });
 
+test("pause freezes the shared visual clock and removes the redundant pause stamp", async () => {
+  const css = await readFile(new URL("../app/globals.css", import.meta.url), "utf8");
+  assert.match(game, /if \(!paused\) visualClock\.current \+= dt \* 1000/);
+  assert.match(game, /const animationNow = visualClock\.current/);
+  assert.match(game, /renderPlayerMoving = paused \? playerWasMoving\.current : isMoving/);
+  assert.doesNotMatch(game, /Math\.floor\(now \/ \(1000 \/ 24\)\)/);
+  assert.match(css, /\.pause-menu>div::after\{content:none;display:none\}/);
+});
+
+test("settings groups controls and persists master plus independent audio channels", () => {
+  assert.match(game, />操作控制</);
+  assert.match(game, />按鍵設置</);
+  assert.match(game, />環境設置</);
+  for (const label of ["全部靜音", "總音量", "音效", "音樂", "語音"]) assert.match(game, new RegExp(label));
+  assert.match(game, /AUDIO_SETTINGS_KEY/);
+  assert.match(game, /effectiveVolume\(audioLevelsRef\.current, "sfx"/);
+  assert.match(game, /effectiveVolume\(audioLevelsRef\.current, "voice"/);
+  assert.doesNotMatch(game, /setMuted\(value => !value\).*結束遊戲/);
+});
+
 test("keeps patrol-light invisibility visual-only and disables it on death", () => {
-  assert.match(game, /ordinaryKinds = isPatrolLightPeriod\(secondsRemaining\)/);
-  assert.match(game, /roomEvent === 1 && choice === 1 && isPatrolLightPeriod\(g\.time\)/);
-  assert.match(game, /const lightManifested = e\.kind !== "light" \|\| isPatrolLightManifested\(now, e\.phase, e\.hp, g\.time\)/);
+  assert.match(floorGeneration, /ordinaryKinds = isPatrolLightPeriod\(secondsRemaining\)/);
+  assert.doesNotMatch(game, /roomEvent === 1/);
+  assert.match(game, /const lightManifested = e\.kind !== "light" \|\| isPatrolLightManifested\(animationNow, e\.phase, e\.hp, g\.time\)/);
   assert.match(game, /sampleCharacterLighting\(sceneLightingContext, e\.x \/ sceneWidth, g\.time\)/);
   assert.match(game, /sampleCharacterLighting\(sceneLightingContext, p\.x \/ sceneWidth, g\.time\)/);
   assert.match(game, /getEnemyAnimationExposureMultiplier\(enemyPose\)/);
@@ -145,7 +171,8 @@ test("keeps living pursuers when a new wave or boss encounter begins", () => {
 
 test("lets rent pursuers cross furniture and follow every player scene transition", () => {
   assert.match(game, /const isPursuer = e\.kind === "pursuer"/);
-  assert.match(game, /const next = isPursuer[\s\S]*clamp\(e\.x \+ dx/);
+  assert.match(game, /const unrestrictedNext = \[clamp\(e\.x \+ dx/);
+  assert.match(game, /isPursuer \|\| wallEmerging[\s\S]*hasEnemyPlayerClearance/);
   assert.match(game, /enemy\.kind === "pursuer" \|\| Math\.abs\(enemy\.x - doorX\) < 430/);
   assert.match(game, /enemy\.kind === "pursuer" \|\| enemy\.x > 1320/);
 });

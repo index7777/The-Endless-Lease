@@ -51,6 +51,7 @@ test("late hallway lighting never paints skin cyan or makes it self-luminous", (
 test("normalizes baked exposure between player animation sheets", () => {
   assert.equal(getPlayerAnimationExposureMultiplier("male", "idle"), 1);
   assert.ok(getPlayerAnimationExposureMultiplier("male", "walk") < .9);
+  assert.ok(getPlayerAnimationExposureMultiplier("male", "walk") <= .76);
   assert.ok(getPlayerAnimationExposureMultiplier("male", "attack") < 1);
   assert.ok(getPlayerAnimationExposureMultiplier("female", "walk") < 1);
   const lighting = sampleCharacterLighting("hallway", .5, 110);

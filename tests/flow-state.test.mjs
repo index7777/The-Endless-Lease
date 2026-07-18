@@ -59,7 +59,7 @@ test("keeps run overlays mutually exclusive and lets settlement take priority", 
 
 test("does not pause behind an overlay or close a newer overlay with a stale action", () => {
   const run = reduce(INITIAL_GAME_FLOW, { type: "OPEN_INTRO" }, { type: "OPEN_DESTINY" }, { type: "START_RUN" });
-  const event = gameFlowReducer(run, { type: "OPEN_OVERLAY", overlay: { kind: "roomEvent", roomId: 2 } });
+  const event = gameFlowReducer(run, { type: "OPEN_OVERLAY", overlay: { kind: "roomEvent", roomId: "resident_clinic" } });
   assert.equal(gameFlowReducer(event, { type: "TOGGLE_PAUSE" }), event);
   const settlement = gameFlowReducer(event, { type: "OPEN_OVERLAY", overlay: { kind: "settlement" } });
   assert.equal(gameFlowReducer(settlement, { type: "CLOSE_OVERLAY", kind: "roomEvent" }), settlement);

@@ -1,7 +1,7 @@
 export type GameOverlay =
   | { kind: "none" }
   | { kind: "settlement" }
-  | { kind: "roomEvent"; roomId: number }
+  | { kind: "roomEvent"; roomId: string }
   | { kind: "floorSelect" }
   | { kind: "storage" };
 

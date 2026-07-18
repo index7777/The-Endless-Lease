@@ -15,5 +15,6 @@ test("角色尺度使用 256 px 成人與 312 px 標準門", () => {
 test("遊戲渲染由集中角色尺度表取得高度", () => {
   assert.match(game, /getCharacterRenderHeightPx\("player"\)/);
   assert.match(game, /getCharacterRenderHeightPx\(enemyRole\)/);
+  assert.doesNotMatch(game, /boss_b1" \? 248/);
   assert.doesNotMatch(game, /isBoss \? 342 : e\.elite \? 294 : 268/);
 });

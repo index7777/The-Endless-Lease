@@ -1,4 +1,5 @@
 import type { GameRuntime } from "./model";
+import { BOSS_BALANCE } from "./game-balance.ts";
 
 export function resetUndefeatedBossAfterEscape(runtime: GameRuntime) {
   const boss = runtime.activeBoss;
@@ -8,5 +9,5 @@ export function resetUndefeatedBossAfterEscape(runtime: GameRuntime) {
 }
 
 export function bossMaxHealth(boss: "boss_b1" | "boss_b2") {
-  return boss === "boss_b1" ? 420 : 680;
+  return BOSS_BALANCE[boss].maxHp;
 }

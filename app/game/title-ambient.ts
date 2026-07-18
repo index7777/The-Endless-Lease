@@ -8,6 +8,7 @@ export class TitleAmbientEngine {
   private elevator: HTMLAudioElement | null = null;
   private stopped = false;
   private muted = false;
+  private volume = 1;
 
   async start() {
     if (this.stopped || typeof window === "undefined") return;
@@ -20,7 +21,7 @@ export class TitleAmbientEngine {
     const context = new AudioClass();
     this.context = context;
     this.master = context.createGain();
-    this.master.gain.value = this.muted ? 0 : 1;
+    this.master.gain.value = this.muted ? 0 : this.volume;
     this.master.connect(context.destination);
     await context.resume().catch(() => undefined);
     this.createDrone();
@@ -38,8 +39,15 @@ export class TitleAmbientEngine {
     this.muted = muted;
     if (!this.context || !this.master) return;
     this.master.gain.cancelScheduledValues(this.context.currentTime);
-    this.master.gain.setTargetAtTime(muted ? 0 : 1, this.context.currentTime, .08);
+    this.master.gain.setTargetAtTime(muted ? 0 : this.volume, this.context.currentTime, .08);
     if (this.elevator) this.elevator.muted = muted;
+  }
+
+  setVolume(volume: number) {
+    this.volume = Math.max(0, Math.min(1, volume));
+    if (!this.context || !this.master) return;
+    this.master.gain.cancelScheduledValues(this.context.currentTime);
+    this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume, this.context.currentTime, .08);
   }
 
   playPaperAndFade() {
@@ -61,7 +69,7 @@ export class TitleAmbientEngine {
     source.buffer = buffer; source.connect(filter); filter.connect(gain); gain.connect(this.master);
     source.start();
     this.master.gain.cancelScheduledValues(context.currentTime);
-    this.master.gain.setValueAtTime(this.muted ? 0 : 1, context.currentTime);
+    this.master.gain.setValueAtTime(this.muted ? 0 : this.volume, context.currentTime);
     this.master.gain.linearRampToValueAtTime(0, context.currentTime + 1.5);
     this.setTimer(() => this.stop(), 1700);
   }

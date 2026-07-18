@@ -4,7 +4,13 @@ export type SpawnId = "from_hallway" | "from_room" | "from_elevator" | "default"
 export type SceneSpawn = { id: SpawnId; x: number; facing: -1 | 1; safeRadius: number };
 export type GroundHit = { grounded: boolean; x: number; y: number; normal: { x: number; y: number }; collider: string; distance: number };
 export type CollisionRect = { id: string; x1: number; x2: number; y1: number; y2: number };
-export type RoomCollisionProfile = "home" | "clinic" | "management";
+export type RoomCollisionProfile = "home" | "clinic" | "management" | "memory_echo";
+export type BossSceneId = "boss_b1" | "boss_b2";
+
+export const BOSS_SCENE_SPAWNS: Record<BossSceneId, SceneSpawn> = {
+  boss_b1: { id: "from_elevator", x: .875, facing: -1, safeRadius: .055 },
+  boss_b2: { id: "from_elevator", x: .895, facing: -1, safeRadius: .055 },
+};
 
 export const SCENE_SPAWNS: Record<Location, readonly SceneSpawn[]> = {
   hallway: [
@@ -54,6 +60,12 @@ export function resolveSpawn(location: Location, spawnId: SpawnId, worldWidth: n
   return { spawn, ground: probeGround(location, x, worldWidth, viewportHeight) };
 }
 
+export function resolveBossSpawn(boss: BossSceneId, worldWidth: number, viewportHeight: number) {
+  const spawn = BOSS_SCENE_SPAWNS[boss];
+  const x = Math.round(spawn.x * worldWidth);
+  return { spawn, ground: probeGround("hallway", x, worldWidth, viewportHeight) };
+}
+
 export const ROOM_COLLIDERS: readonly CollisionRect[] = [
   // 家具位於後景；碰撞不得封住前景地板，也不得堵住房門出口。
   { id: "television_cabinet", x1: .26, x2: .40, y1: .54, y2: .78 },
@@ -83,7 +95,7 @@ export function isWalkable(location: Location, x: number, y: number, worldWidth:
   // The room entrance and its background cabinet/stair silhouette share one visual area.
   // Keep a continuous horizontal exit lane so walking right never wedges the player there.
   if (x + radius <= worldWidth * .40) return true;
-  const colliders = roomProfile === "clinic" ? CLINIC_COLLIDERS : roomProfile === "management" ? [] : ROOM_COLLIDERS;
+  const colliders = roomProfile === "clinic" ? CLINIC_COLLIDERS : roomProfile === "management" || roomProfile === "memory_echo" ? [] : ROOM_COLLIDERS;
   return !colliders.some(rect => x + radius > rect.x1 * worldWidth && x - radius < rect.x2 * worldWidth && y > rect.y1 * viewportHeight && y - 8 < rect.y2 * viewportHeight);
 }
 

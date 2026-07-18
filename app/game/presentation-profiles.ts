@@ -175,7 +175,7 @@ export function toCharacterCanvasFilter(sample: CharacterLightingSample, exposur
 export type CharacterAnimationPose = "idle" | "walk" | "attack" | "hit" | "death";
 
 const PLAYER_ANIMATION_EXPOSURE: Record<"male" | "female", Record<CharacterAnimationPose, number>> = {
-  male: { idle: 1, walk: .82, attack: .9, hit: .94, death: .94 },
+  male: { idle: 1, walk: .74, attack: .9, hit: .94, death: .94 },
   female: { idle: 1, walk: .92, attack: .94, hit: .95, death: .95 },
 };
 

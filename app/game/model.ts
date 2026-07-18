@@ -66,6 +66,12 @@ export type FloorState = {
   lastSpawnDay: number;
 };
 
+export type EventAssignment = {
+  eventId: string;
+  floor: number;
+  slot: number;
+};
+
 export type Destiny = {
   attributes: number[];
   gender: "male" | "female";
@@ -97,6 +103,8 @@ export type GameRuntime = {
   floor: number;
   attention: number;
   visitedRooms: number[];
+  resolvedEventIds?: string[];
+  eventAssignments?: EventAssignment[];
   floorStates: Record<number, FloorState>;
   weaponLevel: number;
   medkits: number;

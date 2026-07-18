@@ -23,6 +23,12 @@ const isRecord = (value: unknown): value is Record<string, unknown> => typeof va
 const isFiniteNumber = (value: unknown): value is number => typeof value === "number" && Number.isFinite(value);
 const isInteger = (value: unknown): value is number => Number.isInteger(value);
 const isStringArray = (value: unknown): value is string[] => Array.isArray(value) && value.every(item => typeof item === "string");
+const isEventAssignments = (value: unknown) => Array.isArray(value) && value.every(item => isRecord(item)
+  && typeof item.eventId === "string"
+  && isInteger(item.floor)
+  && isInteger(item.slot)
+  && item.slot >= 1
+  && item.slot <= 9);
 const LOCATIONS: Location[] = ["hallway", "room", "elevator"];
 const ENDING_STATES: DemoEndingState[] = ["B2_ALIVE", "B2_DEFEATED", "KEYCARD_DROPPED", "KEYCARD_COLLECTED", "CLEARANCE_REPORT_VIEWED", "FLOOR10_BUTTON_DISCOVERED", "RETURN_TO_OFFICE", "KEYCARD_DELIVERED", "POST_B2_FREE_ROAM", "FLOOR10_NOTICE_DISCOVERED", "DEMO_ENDING_STARTED", "DEMO_COMPLETED"];
 
@@ -50,6 +56,8 @@ const isGameRuntime = (value: unknown): value is GameRuntime => {
     && Array.isArray(value.enemies)
     && Array.isArray(value.pickups)
     && Array.isArray(value.visitedRooms)
+    && (value.resolvedEventIds === undefined || isStringArray(value.resolvedEventIds))
+    && (value.eventAssignments === undefined || isEventAssignments(value.eventAssignments))
     && Array.isArray(value.debtLedger)
     && isStringArray(value.defeatedBosses)
     && [value.settlementTriggered, value.landlordTask, value.debtMode, value.rentProtectionLost, value.homeBreachTriggered, value.dead].every(item => typeof item === "boolean")
@@ -84,6 +92,8 @@ export const parseRunSave = (serialized: string | null): RunSaveV1 | null => {
       || !isGameRuntime(value.game)) return null;
     const save = value as RunSaveV1;
     save.game.player.attack = 0;
+    save.game.resolvedEventIds ??= [];
+    save.game.eventAssignments ??= [];
     save.game.overdueDays = save.game.overdueDays ?? save.game.debtLedger.length;
     save.game.player.invuln = 0;
     save.game.settlementTriggered = false;

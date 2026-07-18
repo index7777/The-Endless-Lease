@@ -1,3 +1,5 @@
+import { PURSUER_BALANCE } from "./game-balance.ts";
+
 export type RentPursuitWave = {
   debtCount: number;
   count: number;
@@ -8,7 +10,7 @@ export function getRentPursuitWave(debtCount: number): RentPursuitWave {
   const normalizedDebtCount = Math.max(1, Math.floor(debtCount));
   return {
     debtCount: normalizedDebtCount,
-    count: 2 ** (normalizedDebtCount - 1),
+    count: PURSUER_BALANCE.countBase ** (normalizedDebtCount - 1),
     threat: normalizedDebtCount,
   };
 }
